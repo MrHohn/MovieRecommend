@@ -1,0 +1,15 @@
+# ignore sublime project
+*.sublime*
+
+# python files
+__pycache__
+*.pyc
+
+# vim backup file
+*.*~
+
+# json data
+*.json
+
+# dump files
+dump
