@@ -1,4 +1,5 @@
 import json
+import DataService
 
 def main():
 	# open the ratings.csv and gather user's ratings into a list
@@ -18,7 +19,7 @@ def main():
 	# save all data in dict
 	# output the data to JSON file and MongoDB both
 	print("Start converting to JSON...")
-	out = open('ratings.json', 'w')
+	out = open('user_rating.json', 'w')
 	curDict = {} # {uid : ***, ratings : {[mid, rating], ...}}
 	curList = []
 	prevId = "nobody"
