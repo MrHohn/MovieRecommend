@@ -4,7 +4,7 @@ class Mongo(object):
 
 	@classmethod
 	def __init__(self, database):
-		print("--- Initializing database: [" + database + "] ---")
+		print("[mongo] Initializing database: [" + database + "]")
 		self.client = MongoClient('localhost', 27017)
 		self.db = self.client[database]
 
@@ -29,8 +29,12 @@ class Mongo(object):
 		return result
 
 	@classmethod
+	def insert_one(self, collection, doc):
+		insert_id = self.db[collection].insert_one(doc).inserted_id
+
+	@classmethod
 	def __del__(self):
-		print("--- Closing all connections ---")
+		print("[mongo] Closing all connections")
 		# clean up work
 		if "client" in locals():
 			self.client.close()
