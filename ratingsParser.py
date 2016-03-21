@@ -31,7 +31,7 @@ def main():
 		curId = int(curAttrs[0])
 		# store new user
 		if prevId != -1 and curId != prevId:
-			curDict["uid"] = curId
+			curDict["uid"] = prevId
 			curDict["ratings"] = curList
 			mongo.insert_one("user_rate", curDict);
 			# json_data = json.dumps(curDict, sort_keys = True)
