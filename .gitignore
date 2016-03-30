@@ -13,3 +13,6 @@ __pycache__
 
 # dump files
 dump
+
+# IMDB Datasets
+*.list

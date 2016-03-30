@@ -1,0 +1,35 @@
+//Title of film (IMDB style, will likely include year in title)
+title: 
+
+//MPAA Rating (PG, PG-13, R, etc)
+rating:
+
+//List of names of actors and actresses
+cast: []
+
+//List of names of directors, producers, etc.
+crew: []
+
+//List of production companies that worked on the movie
+companies: []
+
+//Genre
+genre:
+
+//Release Date
+year:
+
+//Country of Origin
+country:
+
+//List of languages movie released in
+languages: []
+
+//List of IMDB Keywords/tags
+keywords: []
+
+//List of names of related movies (sequels, prequels, spin-offs, etc)
+related: []
+
+//If this field is present, then this is a TV show, not a movie.
+tv: 
