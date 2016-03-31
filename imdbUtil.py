@@ -28,4 +28,4 @@ def stripEpisode(title):
 
 #Formats IMDB title as it should appear in the database
 def formatTitle(title):
-	return title.encode('ascii', 'ignore').decode('ascii')
+	return title.encode('ascii', 'ignore').decode('ascii').strip()
