@@ -14,7 +14,7 @@ crew: []
 companies: []
 
 //List of Genres
-genre: []
+genres: []
 
 //Release Date
 year:

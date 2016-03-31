@@ -2,6 +2,7 @@ import DataService
 import imdbMovies
 import imdbCountries
 import imdbRatings
+import imdbGenres
 
 collectionName = "movies"
 
@@ -11,6 +12,10 @@ mongo.db[collectionName].create_index("title", unique=True)
 # Add all movie titles and release years into database.
 # --- Most recent tested runtime (1m30s)
 imdbMovies.parse(mongo, collectionName)    
+
+# Update all movies with genre lists.
+# --- Most recent tested runtime (3m02s)
+imdbGenres.parse(mongo, collectionName) 
 
 # Update all movies with country information.
 # --- Most recent tested runtime (2m40s)
