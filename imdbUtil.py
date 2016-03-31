@@ -22,6 +22,10 @@ def isShow(title):
 		return True
 	return False
 
-#Strips unneeded pieces of a title (such as TV episode)
-def formatTitle(title):
+#Strips TV episode from IMDB title
+def stripEpisode(title):
 	return re.sub(r"\s{.*}", "", title)
+
+#Formats IMDB title as it should appear in the database
+def formatTitle(title):
+	return title.encode('ascii', 'ignore').decode('ascii')

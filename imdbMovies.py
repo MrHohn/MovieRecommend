@@ -1,9 +1,7 @@
-import DataService
 import pymongo
 import imdbUtil
 import time
 import csv
-import sys
 
 # Parsing of IMDB movies.list file.
 # Adds fields to database:
@@ -36,6 +34,7 @@ def parse(mongo, collectionName):
 			if count % progressInterval == 0:
 				print(str(count), "lines processed so far. ("+str(int((count/progressTotal)*100))+"%%) (%0.2fs)" % (time.time()-startTime))
 
+			# Parse the text data from the read TSV line
 			for value in line:
 				if value == "":
 					continue
@@ -48,14 +47,14 @@ def parse(mongo, collectionName):
 					year = imdbUtil.parseYear(value)
 				valueInd += 1
 
-			# Read a Movie TSV. Add the movie to the database.
+			# This line cooresponds to a movie. Add it to the database.
 			if title != -1 and year != -1:
-				if "title" in pendingDoc and imdbUtil.formatTitle(title) != imdbUtil.formatTitle(pendingDoc["title"]):
+				if "title" in pendingDoc and imdbUtil.stripEpisode(title) != imdbUtil.stripEpisode(pendingDoc["title"]):
 					if "tv" in pendingDoc:
 						tvCount += 1
 					else:
 						movieCount += 1
-					pendingDoc["title"] = title.encode('latin-1')
+					pendingDoc["title"] = imdbUtil.formatTitle(title)
 					bulkPayload.insert(pendingDoc.copy())
 					bulkCount += 1
 					pendingDoc.clear()
@@ -71,9 +70,15 @@ def parse(mongo, collectionName):
 				pendingDoc["title"] = title
 				pendingDoc["year"] = year
 
-			#Current TSV is for a TV episode. Mark the previously logged movie as actually being a TV show, rather than a movie.
+			#This line cooresponds to a TV episode. Mark the previously logged movie as actually being a TV show, rather than a movie.
 			if isShow:
 				pendingDoc["tv"] = 1
+
+	if bulkCount > 0:
+		try:
+			bulkPayload.execute()
+		except pymongo.errors.OperationFailure as e:
+			skipCount += len(e.details["writeErrors"])
 
 	print("[*] Parse Complete (%0.2fs)" % (time.time()-startTime))
 	print("[*] Found", str(movieCount), "movies.")

@@ -13,8 +13,8 @@ crew: []
 //List of production companies that worked on the movie
 companies: []
 
-//Genre
-genre:
+//List of Genres
+genre: []
 
 //Release Date
 year:
