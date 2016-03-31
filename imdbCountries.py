@@ -31,7 +31,7 @@ def parse(mongo, collectionName):
 				if value == "":
 					continue
 				if valueInd == 0: #Movie Title
-					if imdbUtil.isShow(value):
+					if imdbUtil.isEpisode(value):
 						break
 					title = value
 				elif valueInd == 1: #Country

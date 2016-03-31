@@ -1,6 +1,10 @@
 //Title of film (IMDB style, will likely include year in title)
 title: 
 
+//List of all names that this movie is known by (standard title and AKA titles)
+//In simple format, not IMDB format, so will not include year/etc information in title.
+alltitles: []
+
 //MPAA Rating (PG, PG-13, R, etc)
 rating:
 

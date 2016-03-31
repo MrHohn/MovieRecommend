@@ -1,5 +1,6 @@
 import DataService
 import imdbMovies
+import imdbAkaTitles
 import imdbCountries
 import imdbRatings
 import imdbGenres
@@ -16,6 +17,10 @@ imdbMovies.parse(mongo, collectionName)
 # Update all movies with genre lists.
 # --- Most recent tested runtime (3m02s)
 imdbGenres.parse(mongo, collectionName) 
+
+# Update all movies with lists of alternate titles.
+# --- Most recent tested runtime ()
+imdbAkaTitles.parse(mongo, collectionName)
 
 # Update all movies with country information.
 # --- Most recent tested runtime (2m40s)

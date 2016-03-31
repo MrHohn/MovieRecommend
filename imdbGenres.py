@@ -42,7 +42,7 @@ def parse(mongo, collectionName):
 				if ignoring:
 					break
 				if valueInd == 0: #Movie Title
-					if imdbUtil.isShow(value):
+					if imdbUtil.isEpisode(value):
 						break
 					lastTitle = title
 					title = value

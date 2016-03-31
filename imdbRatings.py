@@ -32,7 +32,7 @@ def parse(mongo, collectionName):
 		if line[:3] == "RE:" and "Rated" in line:
 			rating = __extractRating(line)
 
-		# Update the corresponding movie entries in the database with the country info.
+		# Update the corresponding movie entries in the database with the ratings info.
 		if title != -1 and rating != -1:
 			bulkPayload.find( {"title":imdbUtil.formatTitle(title)} ).update( {
 					"$set": { "rating":rating }

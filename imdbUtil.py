@@ -17,7 +17,7 @@ def parseYear(year):
 #IMDB Title Format:
 #	TITLE (YEAR) {EPISODE}
 #	If episode included, then it is a TV show, not a movie.
-def isShow(title):
+def isEpisode(title):
 	if "{" in title:
 		return True
 	return False
@@ -28,4 +28,12 @@ def stripEpisode(title):
 
 #Formats IMDB title as it should appear in the database
 def formatTitle(title):
-	return title.encode('ascii', 'ignore').decode('ascii').strip()
+	return title.replace('"', '').encode('ascii', 'ignore').decode('ascii').strip()
+
+#Strips all information from the IMDB title except for the title itself (year, episode, etc)
+def simpleTitle(title):
+	titlef = formatTitle(title)
+	if "(" in titlef:
+		return titlef[:titlef.index('(')-1]
+	else:
+		return titlef

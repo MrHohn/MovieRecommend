@@ -29,7 +29,7 @@ def parse(mongo, collectionName):
 			title = -1
 			year = -1
 			valueInd = 0 #Which column in the TSV file are we reading?
-			isShow = False
+			isEpisode = False
 			count += 1
 			if count % progressInterval == 0:
 				print(str(count), "lines processed so far. ("+str(int((count/progressTotal)*100))+"%%) (%0.2fs)" % (time.time()-startTime))
@@ -39,8 +39,8 @@ def parse(mongo, collectionName):
 				if value == "":
 					continue
 				if valueInd == 0: #Movie Title
-					if imdbUtil.isShow(value):
-						isShow = True
+					if imdbUtil.isEpisode(value):
+						isEpisode = True
 						break
 					title = value
 				elif valueInd == 1: #Year
@@ -71,7 +71,7 @@ def parse(mongo, collectionName):
 				pendingDoc["year"] = year
 
 			#This line cooresponds to a TV episode. Mark the previously logged movie as actually being a TV show, rather than a movie.
-			if isShow:
+			if isEpisode:
 				pendingDoc["tv"] = 1
 
 	if pendingDoc != {}:
