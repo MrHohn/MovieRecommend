@@ -54,7 +54,7 @@ def parse(mongo, collectionName):
 						tvCount += 1
 					else:
 						movieCount += 1
-					pendingDoc["title"] = imdbUtil.formatTitle(title)
+					pendingDoc["title"] = imdbUtil.formatTitle(pendingDoc["title"])
 					bulkPayload.insert(pendingDoc.copy())
 					bulkCount += 1
 					pendingDoc.clear()
@@ -73,6 +73,15 @@ def parse(mongo, collectionName):
 			#This line cooresponds to a TV episode. Mark the previously logged movie as actually being a TV show, rather than a movie.
 			if isShow:
 				pendingDoc["tv"] = 1
+
+	if pendingDoc != {}:
+		if "tv" in pendingDoc:
+			tvCount += 1
+		else:
+			movieCount += 1
+		pendingDoc["title"] = imdbUtil.formatTitle(pendingDoc["title"])
+		bulkPayload.insert(pendingDoc.copy())
+		bulkCount += 1
 
 	if bulkCount > 0:
 		try:
