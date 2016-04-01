@@ -16,3 +16,6 @@ dump
 
 # IMDB Datasets
 *.list
+
+# MovieLens Datasets
+*.csv
