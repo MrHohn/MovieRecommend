@@ -6,8 +6,9 @@ import imdbRatings
 import imdbGenres
 import imdbCompanies
 import imdbLanguages
+import imdbRelatedFilms
 
-# Approximate total run time: 10 minutes
+# Approximate total run time: 15 minutes
 
 collectionName = "movies"
 mongo = DataService.Mongo("imdb")
@@ -43,3 +44,7 @@ imdbCompanies.parse(mongo, collectionName)
 # Update all movies with language information.
 # --- Most recent tested runtime (3m10s)
 imdbLanguages.parse(mongo, collectionName) 
+
+# Update all movies with taxonomic information.
+# --- Most recent tested runtime (31s)
+imdbRelatedFilms.parse(mongo, collectionName) 
