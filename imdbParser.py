@@ -5,6 +5,7 @@ import imdbCountries
 import imdbRatings
 import imdbGenres
 import imdbCompanies
+import imdbLanguages
 
 # Approximate total run time: 10 minutes
 
@@ -38,3 +39,7 @@ imdbRatings.parse(mongo, collectionName)
 # Update all movies with production company information.
 # --- Most recent tested runtime (2m30s)
 imdbCompanies.parse(mongo, collectionName) 
+
+# Update all movies with language information.
+# --- Most recent tested runtime (3m10s)
+imdbLanguages.parse(mongo, collectionName) 

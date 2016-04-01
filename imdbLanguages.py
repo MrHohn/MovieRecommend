@@ -1,15 +1,14 @@
 import imdbUtil
 import time
 import csv
-import re
 
-# Parsing of IMDB production-companies.list file.
+# Parsing of IMDB language.list file.
 # Adds fields to movie database:
-#		-Production Company (companies)
+#		-Language (languages)
 
 def parse(mongo, collectionName):
 	progressInterval = 100000  # How often should we print a progress report to the console?
-	progressTotal = 2400000     # Approximate number of total lines in the file.	  
+	progressTotal = 1800000     # Approximate number of total lines in the file.	  
 	count = 0
 	updateCount = 0
 
@@ -17,10 +16,10 @@ def parse(mongo, collectionName):
 	bulkSize = 5000 		  # How many queries should we store in memory before sending them to the database in bulk?
 	bulkCount = 0
 
-	print("=== Starting Parse of production-companies.list ===")
+	print("=== Starting Parse of language.list ===")
 	startTime = time.time()
-	with open("imdbdata/production-companies.list", encoding="latin1") as tsv:
-		companies = []
+	with open("imdbdata/language.list", encoding="latin1") as tsv:
+		languages = []
 		title = -1
 		lastTitle = -1
 		for line in csv.reader(tsv, delimiter="\t"):			
@@ -38,16 +37,16 @@ def parse(mongo, collectionName):
 					lastTitle = title
 					title = value
 
-					# We moved onto the next movie; update the the database with the company info of the previous movie first.
-					if title != lastTitle and len(companies) > 0:
+					# We moved onto the next movie; update the the database with the language info of the previous movie first.
+					if title != lastTitle and len(languages) > 0:
 						bulkPayload.find( {"imdbtitle":imdbUtil.formatTitle(lastTitle)} ).update( {
-							"$set": { "companies":companies.copy() }
+							"$set": { "languages":languages.copy() }
 						} )
 						updateCount += 1
 						bulkCount += 1
-						companies = []
+						languages = []
 				elif valueInd == 1: #Company
-					__appendCompany(companies, value)
+					languages.append(__formatLanguage(value))
 				valueInd += 1
 
 			if bulkCount >= bulkSize:
@@ -55,9 +54,9 @@ def parse(mongo, collectionName):
 				bulkPayload = mongo.db[collectionName].initialize_unordered_bulk_op()
 				bulkCount = 0
 
-	if len(companies) > 0:
+	if len(languages) > 0:
 		bulkPayload.find( {"imdbtitle":imdbUtil.formatTitle(lastTitle)} ).update( {
-			"$set": { "companies":companies.copy() }
+			"$set": { "languages":languages.copy() }
 		} )
 		updateCount += 1
 		bulkCount += 1
@@ -66,16 +65,10 @@ def parse(mongo, collectionName):
 		bulkPayload.execute()
 
 	print("[*] Parse Complete (%0.2fs)" % (time.time()-startTime))
-	print("[*] Attemped updating", str(updateCount), "movies with company information.")
+	print("[*] Attemped updating", str(updateCount), "movies with language information.")
 
-def __appendCompany(clist, company):
-	companyStr = company
-	if "[" in company:
-		companyStr = company[:company.index("[")-1]
-	
-	clist.append(companyStr)
-	if "(" in company: #Acronym
-		clist.append(companyStr[:companyStr.index("(")-1]) #Store just the name (no acronym info)
-		acronym = re.findall(r"\([A-Z0-9\-]+\)", companyStr)
-		if len(acronym) > 0:
-			clist.append(acronym[len(acronym)-1].replace("(","").replace(")","")) #Store just the acronym
+def __formatLanguage(language):
+	if "(" in language:
+		return language[:language.index("(")-1]
+	else:
+		return language
