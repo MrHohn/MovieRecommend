@@ -72,7 +72,7 @@ def parse(mongo, collectionName):
 				pendingDoc["year"] = year
 
 			#This line cooresponds to a TV episode. Mark the previously logged movie as actually being a TV show, rather than a movie.
-			if isEpisode:
+			if isEpisode or "(TV)" in str(title):
 				pendingDoc["tv"] = 1
 
 	if pendingDoc != {}:
