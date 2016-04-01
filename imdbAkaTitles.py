@@ -1,6 +1,5 @@
 import imdbUtil
 import time
-import re
 
 # Parsing of IMDB aka-titles.list file.
 # Appends to following movie database field:
@@ -38,7 +37,7 @@ def parse(mongo, collectionName):
 				# Update the corresponding movie entry in the database with the alternate title info.
 				if len(akatitles) > 0:
 					bulkPayload.find( {"imdbtitle":imdbUtil.formatTitle(title)} ).update( {
-						"$addToSet": { "title": {"$each" : akatitles} }
+						"$addToSet": { "title": {"$each" : list(set(akatitles.copy()))} }
 					} )
 					bulkCount += 1
 					updateCount += 1
