@@ -4,7 +4,7 @@ import re
 
 # Parsing of IMDB aka-titles.list file.
 # Appends to following movie database field:
-#		-All Titles (alltitles)
+#		-All Titles (title)
 
 def parse(mongo, collectionName):
 	progressInterval = 100000  # How often should we print a progress report to the console?
@@ -37,9 +37,8 @@ def parse(mongo, collectionName):
 			else:
 				# Update the corresponding movie entry in the database with the alternate title info.
 				if len(akatitles) > 0:
-					akatitles.append(imdbUtil.simpleTitle(title))
-					bulkPayload.find( {"title":imdbUtil.formatTitle(title)} ).update( {
-						"$set": { "alltitles":akatitles }
+					bulkPayload.find( {"imdbtitle":imdbUtil.formatTitle(title)} ).update( {
+						"$addToSet": { "title": {"$each" : akatitles} }
 					} )
 					bulkCount += 1
 					updateCount += 1

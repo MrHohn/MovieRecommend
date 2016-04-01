@@ -34,7 +34,7 @@ def parse(mongo, collectionName):
 
 		# Update the corresponding movie entries in the database with the ratings info.
 		if title != -1 and rating != -1:
-			bulkPayload.find( {"title":imdbUtil.formatTitle(title)} ).update( {
+			bulkPayload.find( {"imdbtitle":imdbUtil.formatTitle(title)} ).update( {
 					"$set": { "rating":rating }
 				} )
 			bulkCount += 1

@@ -5,7 +5,7 @@ import csv
 
 # Parsing of IMDB movies.list file.
 # Adds fields to database:
-#		-Movie Title 	(title)
+#		-Movie Title 	(imdbtitle/title)
 #		-Release Year 	(year)
 #		-Is TV Show?	(tv)
 
@@ -49,12 +49,12 @@ def parse(mongo, collectionName):
 
 			# This line cooresponds to a movie. Add it to the database.
 			if title != -1 and year != -1:
-				if "title" in pendingDoc and imdbUtil.stripEpisode(title) != imdbUtil.stripEpisode(pendingDoc["title"]):
+				if "imdbtitle" in pendingDoc and imdbUtil.stripEpisode(title) != imdbUtil.stripEpisode(pendingDoc["imdbtitle"]):
 					if "tv" in pendingDoc:
 						tvCount += 1
 					else:
 						movieCount += 1
-					pendingDoc["title"] = imdbUtil.formatTitle(pendingDoc["title"])
+					pendingDoc["imdbtitle"] = imdbUtil.formatTitle(pendingDoc["imdbtitle"])
 					bulkPayload.insert(pendingDoc.copy())
 					bulkCount += 1
 					pendingDoc.clear()
@@ -67,7 +67,8 @@ def parse(mongo, collectionName):
 					bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db[collectionName], ordered=False)	
 					bulkCount = 0
 
-				pendingDoc["title"] = title
+				pendingDoc["imdbtitle"] = title
+				pendingDoc["title"] = [imdbUtil.simpleTitle(title)]
 				pendingDoc["year"] = year
 
 			#This line cooresponds to a TV episode. Mark the previously logged movie as actually being a TV show, rather than a movie.
@@ -79,7 +80,7 @@ def parse(mongo, collectionName):
 			tvCount += 1
 		else:
 			movieCount += 1
-		pendingDoc["title"] = imdbUtil.formatTitle(pendingDoc["title"])
+		pendingDoc["imdbtitle"] = imdbUtil.formatTitle(pendingDoc["imdbtitle"])
 		bulkPayload.insert(pendingDoc.copy())
 		bulkCount += 1
 

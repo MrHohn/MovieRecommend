@@ -8,7 +8,7 @@ import imdbGenres
 collectionName = "movies"
 
 mongo = DataService.Mongo("imdb")
-mongo.db[collectionName].create_index("title", unique=True)
+mongo.db[collectionName].create_index("imdbtitle", unique=True)
 
 # Add all movie titles and release years into database.
 # --- Most recent tested runtime (1m30s)

@@ -51,10 +51,10 @@ def parse(mongo, collectionName):
 					if title != lastTitle and len(genres) > 0:
 						if "Adult" in genres:
 							removeCount += 1
-							bulkPayload.find( {"title":imdbUtil.formatTitle(lastTitle)} ).remove()
+							bulkPayload.find( {"imdbtitle":imdbUtil.formatTitle(lastTitle)} ).remove()
 						else:
 							updateCount += 1
-							bulkPayload.find( {"title":imdbUtil.formatTitle(lastTitle)} ).update( {
+							bulkPayload.find( {"imdbtitle":imdbUtil.formatTitle(lastTitle)} ).update( {
 								"$set": { "genres":genres.copy() }
 							} )
 						bulkCount += 1
@@ -71,10 +71,10 @@ def parse(mongo, collectionName):
 	if len(genres) > 0:
 		if "Adult" in genres:
 			removeCount += 1
-			bulkPayload.remove( {"title":imdbUtil.formatTitle(title)} )
+			bulkPayload.remove( {"imdbtitle":imdbUtil.formatTitle(title)} )
 		else:
 			updateCount += 1
-			bulkPayload.find( {"title":imdbUtil.formatTitle(title)} ).update( {
+			bulkPayload.find( {"imdbtitle":imdbUtil.formatTitle(title)} ).update( {
 				"$set": { "genres":genres.copy() }
 			} )
 		bulkCount += 1
