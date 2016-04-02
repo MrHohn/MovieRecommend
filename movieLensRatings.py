@@ -2,7 +2,7 @@ import pymongo
 import time
 
 # Parsing of MovieLens ratings.csv file.
-# db name: movieRecommend
+# db name: movieLens
 # collection name: user_rate
 # Adds fields to collection:
 #       -user id            (uid)
