@@ -1,8 +1,9 @@
 import DataService
 import movieLensRatings
 import movieLensLinks
+import movieLensLikeDislike
 
-def main():
+def parseMovieLens():
     mongo = DataService.Mongo("movieLens")
 
     # Add all user ratings into database.
@@ -14,6 +15,11 @@ def main():
     # runtime: (0.93s)
     movieLensLinks.parse(mongo)
 
+    # Add user like and dislike into database.
+    movieLensLikeDislike.parse(mongo)
+
+def main():
+    parseMovieLens()
 
 if __name__ == "__main__":
     main()

@@ -17,7 +17,7 @@ def parse(mongo):
     count = 0
     skipCount = 0
 
-    print("[movieLensRatings] Starting Parse of links.csv")
+    print("[movieLensLinks] Starting Parse of links.csv")
     startTime = time.time()
 
     # open the ratings.csv and gather user's ratings into a list
@@ -34,10 +34,10 @@ def parse(mongo):
 
         count += 1
         if count % progressInterval == 0:
-            print("[movieLensRatings] " + str(count) + " lines processed so far. (" + str(int(count * 100 / progressTotal)) + "%%) (%0.2fs)" % (time.time() - startTime))
+            print("[movieLensLinks] " + str(count) + " lines processed so far. (" + str(int(count * 100 / progressTotal)) + "%%) (%0.2fs)" % (time.time() - startTime))
 
         curAttrs = line.split(",")
-        curDict = {} # {uid : ***, imdbid: ***}
+        curDict = {} # {mid : ***, imdbid: ***}
         curDict["mid"] = int(curAttrs[0])
         curDict["imdbid"] = int(curAttrs[1])
         bulkPayload.insert(curDict)
@@ -53,7 +53,7 @@ def parse(mongo):
         skipCount += len(e.details["writeErrors"])
 
 
-    print("[movieLensRatings] Parse Complete (%0.2fs)" % (time.time() - startTime))
-    print("[movieLensRatings] Found " + str(count) + " movies.")
-    print("[movieLensRatings] Skipped " + str(skipCount) + " insertions.")
+    print("[movieLensLinks] Parse Complete (%0.2fs)" % (time.time() - startTime))
+    print("[movieLensLinks] Found " + str(count) + " movies.")
+    print("[movieLensLinks] Skipped " + str(skipCount) + " insertions.")
 
