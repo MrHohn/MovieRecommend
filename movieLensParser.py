@@ -11,7 +11,7 @@ def main():
     movieLensRatings.parse(mongo)
 
     # Add movie id and imdb id pair into database.
-    # runtime: ()
+    # runtime: (0.93s)
     movieLensLinks.parse(mongo)
 
 

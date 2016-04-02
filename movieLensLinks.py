@@ -38,7 +38,7 @@ def parse(mongo):
 
         curAttrs = line.split(",")
         curDict = {} # {uid : ***, imdbid: ***}
-        curDict["uid"] = int(curAttrs[0])
+        curDict["mid"] = int(curAttrs[0])
         curDict["imdbid"] = int(curAttrs[1])
         bulkPayload.insert(curDict)
         if count % bulkSize == 0:
