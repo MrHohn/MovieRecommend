@@ -9,16 +9,14 @@ import time
 #       -user's ratings     (ratings)
 
 def parse(mongo):
-    progressInterval = 100000 # How often should we print a progress report to the console?
-    progressTotal = 22884378   # Approximate number of total lines in the file.
-    # bulkSize = 5000           # How many documents should we store in memory before inserting them into the database in bulk?
-    # bulkCount = 0
-    # pendingDoc = {}           # Current document we are parsing data for. Once finished, will be appended to bulkPayload.
+    progressInterval = 300000 # How often should we print a progress report to the console?
+    progressTotal = 22884378  # Approximate number of total lines in the file.
+    bulkSize = 2000           # How many documents should we store in memory before inserting them into the database in bulk?
     # List of documents that will be given to the database to be inserted to the collection in bulk.
-    # bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db[collectionName], ordered=False)
+    bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db["user_rate"], ordered = False)
     count = 0
-    userCount = 1
-    # skipCount = 0
+    userCount = 0
+    skipCount = 0
 
     print("[movieLensRatings] Starting Parse of ratings.csv")
     startTime = time.time()
@@ -46,10 +44,16 @@ def parse(mongo):
         curId = int(curAttrs[0])
         # store new user
         if prevId != -1 and curId != prevId:
-            userCount += 1
             curDict["uid"] = prevId
             curDict["ratings"] = curList
-            mongo.db["user_rate"].insert_one(curDict)
+            userCount += 1
+            bulkPayload.insert(curDict)
+            if userCount % bulkSize == 0:
+                try:
+                    bulkPayload.execute()
+                except pymongo.errors.OperationFailure as e:
+                    skipCount += len(e.details["writeErrors"])
+                bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db["user_rate"], ordered = False)
             curList = []
             curDict = {}
         # append new rating
@@ -58,9 +62,14 @@ def parse(mongo):
     # write out the last document
     curDict["uid"] = curId
     curDict["ratings"] = curList
-    mongo.db["user_rate"].insert_one(curDict)
+    userCount += 1
+    bulkPayload.insert(curDict)
+    try:
+        bulkPayload.execute()
+    except pymongo.errors.OperationFailure as e:
+        skipCount += len(e.details["writeErrors"])
 
     print("[movieLensRatings] Parse Complete (%0.2fs)" % (time.time() - startTime))
     print("[movieLensRatings] Found " + str(userCount) + " users.")
-    # print("[*] Skipped", str(skipCount), "insertions.")
+    print("[movieLensRatings] Skipped " + str(skipCount) + " insertions.")
 
