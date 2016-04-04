@@ -11,17 +11,26 @@ class MovieLensRecommend(object):
     
     # generate up to 20 movies recommendations given an User ID
     @classmethod
-    def recommend_movies_for_user(self, mongo, userID):
-        top_users = self.get_similar_users(userID, mongo)
-        print("[MovieLensRecommend] Start generating movies...")
+    def recommend_movies_for_user(self, userID):
+        mongo = DataService.Mongo("movieLens")
+        target_user = mongo.db["user_rate"].find_one({"uid": userID})
+        print("[MovieLensRecommend] Target user ID: [" + str(userID) + "]")
+        # check if similar users were calculated
+        if "similar_users" in target_user:
+            print("[MovieLensRecommend] Similar users calculated.")
+            most_similar_users = target_user["similar_users"]
+        else:
+            print("[MovieLensRecommend] Similar users not calculated.")
+            most_similar_users = self.get_similar_users(userID, mongo)
+        print("[MovieLensRecommend] Similar users retrieved.")
+        print("[MovieLensRecommend] Start generating recommend movies...")
         # gain target user history
         target_history = set()
-        target_user = mongo.db["user_rate"].find_one({"uid": userID})
         for rating in target_user["ratings"]:
             target_history.add(rating[0])
 
         movies_count = {}
-        for cur_user_id in top_users:
+        for cur_user_id in most_similar_users:
             cur_user = mongo.db["user_rate"].find_one({"uid": cur_user_id})
             for rating in cur_user["ratings"]:
                 # if user like this movie
@@ -63,7 +72,7 @@ class MovieLensRecommend(object):
         if len(target_like) < 5:
             print("[MovieLensRecommend] Not enough rating history: " + str(len(target_like)) + ".")
             return
-        print("[MovieLensRecommend] Sufficient history: " + str(len(target_like))+ ", now start calculating.")
+        print("[MovieLensRecommend] Sufficient history: " + str(len(target_like))+ ", now start calculating...")
 
         progressInterval = 10000  # How often should we print a progress report to the console?
         progressTotal = 247753    # Approximate number of total users
@@ -96,13 +105,15 @@ class MovieLensRecommend(object):
                 candidates.get()
 
         # now print out and return top 10 candidates
-        top_users = []
+        most_similar_users = []
         while not candidates.empty():
             cur_user = candidates.get()
-            top_users.append(cur_user.uid)
+            most_similar_users.append(cur_user.uid)
             # print("[MovieLensRecommend] uid: " + str(cur_user.uid) + ", score: " + str(cur_user.score))
-        print("[MovieLensRecommend] Similar users retrieved.")
-        return top_users
+        print("[MovieLensRecommend] Calculation complete.")
+        mongo.db["user_rate"].update_one({"uid": target_id}, {"$set": {"similar_users": most_similar_users}}, True)
+        print("[MovieLensRecommend] Stored similar users into DB.")
+        return most_similar_users
 
     @classmethod
     def cosine_similarity(self, set1, set2):
@@ -138,8 +149,7 @@ class Movie(object):
 
 def main():
     # unit test, input: User ID = 4
-    mongo = DataService.Mongo("movieLens")
-    MovieLensRecommend.recommend_movies_for_user(mongo, 4)
+    MovieLensRecommend.recommend_movies_for_user(4)
 
 if __name__ == "__main__":
     main()
