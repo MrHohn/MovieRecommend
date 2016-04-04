@@ -8,11 +8,52 @@ import queue
 # db name: movieLens
 
 class MovieLensRecommend(object):
-
+    
+    # generate up to 20 movies recommendations given an User ID
     @classmethod
+    def recommend_movies_for_user(self, mongo, userID):
+        top_users = self.get_similar_users(userID, mongo)
+        print("[MovieLensRecommend] Start generating movies...")
+        # gain target user history
+        target_history = set()
+        target_user = mongo.db["user_rate"].find_one({"uid": userID})
+        for rating in target_user["ratings"]:
+            target_history.add(rating[0])
+
+        movies_count = {}
+        for cur_user_id in top_users:
+            cur_user = mongo.db["user_rate"].find_one({"uid": cur_user_id})
+            for rating in cur_user["ratings"]:
+                # if user like this movie
+                if rating[1] >= 3.5:
+                    # and the movie is not rated by target user
+                    if rating[0] not in target_history:
+                        # count occurrences
+                        if rating[0] not in movies_count:
+                            movies_count[rating[0]] = 1
+                        else:
+                            movies_count[rating[0]] += 1
+
+        # put all occurrences in to heap to gain top-k
+        movies_pool = queue.PriorityQueue()
+        for movie_id in movies_count:
+            movies_pool.put(Movie(movies_count[movie_id], movie_id))
+            # maintain the size
+            if movies_pool.qsize() > 20:
+                movies_pool.get()
+
+        recommend = []
+        while not movies_pool.empty():
+            cur_movie = movies_pool.get()
+            print("[MovieLensRecommend] Recommend movie ID: " + str(cur_movie.mid) + ", occurrences: " + str(cur_movie.count))
+            recommend.append(cur_movie.mid)
+        print("[MovieLensRecommend] Recommend complete.")
+        return recommend
+
     # return top-10 similar users given an User ID
-    def get_similar_user(self, userID):
-        mongo = DataService.Mongo("movieLens")
+    @classmethod
+    def get_similar_users(self, userID, mongo):
+        print("[MovieLensRecommend] Start calculating similar users...")
         target_user = mongo.db["user_rate"].find_one({"uid": userID})
         target_id = target_user["uid"]
         target_like = set()
@@ -48,30 +89,33 @@ class MovieLensRecommend(object):
                     cur_like.add(rating[0])
             if len(cur_like) < 5:
                 continue
-            cur_similarity = self.cosineSimilarity(cur_like, target_like)
+            cur_similarity = self.cosine_similarity(cur_like, target_like)
             candidates.put(User(cur_similarity, cur_id))
-            # maintain the size
+            # maintain the pool size
             if candidates.qsize() > 10:
                 candidates.get()
 
-        # now print out top 10 candidate
+        # now print out and return top 10 candidates
+        top_users = []
         while not candidates.empty():
             cur_user = candidates.get()
-            print("[MovieLensRecommend] uid: " + str(cur_user.uid) + ", score: " + str(cur_user.score))
+            top_users.append(cur_user.uid)
+            # print("[MovieLensRecommend] uid: " + str(cur_user.uid) + ", score: " + str(cur_user.score))
+        print("[MovieLensRecommend] Similar users retrieved.")
+        return top_users
 
     @classmethod
-    def cosineSimilarity(self, set1, set2):
-        match_count = self.countMatch(set1, set2)
+    def cosine_similarity(self, set1, set2):
+        match_count = self.count_match(set1, set2)
         return float(match_count) / math.sqrt(len(set1) * len(set2))
 
     @classmethod
-    def countMatch(self, set1, set2):
+    def count_match(self, set1, set2):
         count = 0
         for element in set1:
             if element in set2:
                 count += 1
         return count
-
 
 class User(object):
     def __init__(self, score, uid):
@@ -82,11 +126,20 @@ class User(object):
     def __lt__(self, other):
         return self.score < other.score
 
+class Movie(object):
+    def __init__(self, count, mid):
+        self.count = count
+        self.mid = mid
+
+    # less than interface, __cmp__ is gone in Python 3.4?
+    def __lt__(self, other):
+        return self.count < other.count
+
 
 def main():
     # unit test, input: User ID = 4
-    MovieLensRecommend.get_similar_user(4)
-    
+    mongo = DataService.Mongo("movieLens")
+    MovieLensRecommend.recommend_movies_for_user(mongo, 4)
 
 if __name__ == "__main__":
     main()
