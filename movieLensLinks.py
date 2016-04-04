@@ -46,7 +46,7 @@ def parse(mongo):
                 bulkPayload.execute()
             except pymongo.errors.OperationFailure as e:
                 skipCount += len(e.details["writeErrors"])
-            bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db["user_rate"], ordered = False)
+            bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db["movie"], ordered = False)
     try:
         bulkPayload.execute()
     except pymongo.errors.OperationFailure as e:

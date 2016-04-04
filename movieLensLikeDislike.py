@@ -10,7 +10,7 @@ import time
 
 def parse(mongo):
     progressInterval = 1000  # How often should we print a progress report to the console?
-    progressTotal = 276961    # Approximate number of total lines in the file.
+    progressTotal = 247753    # Approximate number of total lines in the file.
     bulkSize = 5000           # How many documents should we store in memory before inserting them into the database in bulk?
     bulkCount = 0
     # List of documents that will be given to the database to be inserted to the collection in bulk.

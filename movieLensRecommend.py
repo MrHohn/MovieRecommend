@@ -25,7 +25,7 @@ class MovieLensRecommend(object):
         print("[MovieLensRecommend] Sufficient history: " + str(len(target_like))+ ", now start calculating.")
 
         progressInterval = 10000  # How often should we print a progress report to the console?
-        progressTotal = 276961    # Approximate number of total users
+        progressTotal = 247753    # Approximate number of total users
         count = 0                 # Counter for progress
 
         # Scan through all users in database and calculate similarity
@@ -36,7 +36,7 @@ class MovieLensRecommend(object):
         for cur_user in cursor:
             count += 1
             if count % progressInterval == 0:
-                print("[movieLensLikeDislike] " + str(count) + " users processed so far. (" + str(int(count * 100 / progressTotal)) + "%%) (%0.2fs)" % (time.time() - startTime))
+                print("[MovieLensRecommend] " + str(count) + " users processed so far. (" + str(int(count * 100 / progressTotal)) + "%%) (%0.2fs)" % (time.time() - startTime))
 
             cur_id = cur_user["uid"]
             if cur_id == target_id:
@@ -55,9 +55,9 @@ class MovieLensRecommend(object):
                 candidates.get()
 
         # now print out top 10 candidate
-        while not q.empty():
-            cur_user = q.get()
-            print("uid: " + str(cur_user.uid) + ", score: " + str(cur_user.score))
+        while not candidates.empty():
+            cur_user = candidates.get()
+            print("[MovieLensRecommend] uid: " + str(cur_user.uid) + ", score: " + str(cur_user.score))
 
     @classmethod
     def cosineSimilarity(self, set1, set2):
