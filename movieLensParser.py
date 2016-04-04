@@ -15,8 +15,8 @@ def parseMovieLens():
     # runtime: (0.93s)
     movieLensLinks.parse(mongo)
 
-    # Add user like and dislike into database.
-    movieLensLikeDislike.parse(mongo)
+    # Add user like and dislike into database. --- unnecessary
+    # movieLensLikeDislike.parse(mongo)
 
 def main():
     parseMovieLens()
