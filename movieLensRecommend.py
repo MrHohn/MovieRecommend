@@ -91,7 +91,7 @@ class MovieLensRecommend(object):
         for cur_user in cursor:
             count += 1
             if count % progressInterval == 0:
-                print("[MovieLensRecommend] " + str(count) + " users processed so far. (" + str(int(count * 100 / progressTotal)) + "%%) (%0.2fs)" % (time.time() - startTime))
+                print("[MovieLensRecommend] %6d lines processed so far. (%d%%) (%0.2fs)" % ((count, int(count * 100 / progressTotal), time.time() - startTime)))
 
             cur_id = cur_user["uid"]
             if cur_id == target_id:

@@ -1,3 +1,4 @@
+import DataService
 import pymongo
 import time
 
@@ -38,7 +39,7 @@ def parse(mongo):
 
         count += 1
         if count % progressInterval == 0:
-            print("[movieLensRatings] " + str(count) + " lines processed so far. (" + str(int(count * 100 / progressTotal)) + "%%) (%0.2fs)" % (time.time() - startTime))
+            print("[movieLensRatings] %8d lines processed so far. (%d%%) (%0.2fs)" % ((count, int(count * 100 / progressTotal), time.time() - startTime)))
 
         curAttrs = line.split(",")
         curId = int(curAttrs[0])
@@ -73,3 +74,10 @@ def parse(mongo):
     print("[movieLensRatings] Found " + str(userCount) + " users.")
     print("[movieLensRatings] Skipped " + str(skipCount) + " insertions.")
 
+
+def main():
+    mongo = DataService.Mongo("movieLens")
+    parse(mongo)
+
+if __name__ == "__main__":
+    main()

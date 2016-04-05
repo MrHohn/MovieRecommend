@@ -1,3 +1,4 @@
+import DataService
 import pymongo
 import time
 import csv
@@ -27,7 +28,6 @@ def parse(mongo):
     # the first line is for attributes
     attrLine = inCSV.readline()
 
-    # save all data in dict
     # output the data into MongoDB
     for line in csv.reader(inCSV, delimiter = ","):
         count += 1
@@ -35,7 +35,7 @@ def parse(mongo):
         if count == 1:
             continue
         if count % progressInterval == 0:
-            print("[movieLensMovies] " + str(count) + " lines processed so far. (" + str(int(count * 100 / progressTotal)) + "%%) (%0.2fs)" % (time.time() - startTime))
+            print("[movieLensMovies] %5d lines processed so far. (%d%%) (%0.2fs)" % ((count, int(count * 100 / progressTotal), time.time() - startTime)))
 
         mid = int(line[0])
         title = line[1]
@@ -58,3 +58,10 @@ def parse(mongo):
     print("[movieLensMovies] Found " + str(count) + " movies.")
     print("[movieLensMovies] Skipped " + str(skipCount) + " insertions.")
 
+
+def main():
+    mongo = DataService.Mongo("movieLens")
+    parse(mongo)
+
+if __name__ == "__main__":
+    main()

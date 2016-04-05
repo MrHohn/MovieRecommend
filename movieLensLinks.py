@@ -1,3 +1,4 @@
+import DataService
 import pymongo
 import time
 
@@ -11,7 +12,7 @@ import time
 def parse(mongo):
     progressInterval = 10000  # How often should we print a progress report to the console?
     progressTotal = 34209     # Approximate number of total lines in the file.
-    bulkSize = 5000           # How many documents should we store in memory before inserting them into the database in bulk?
+    bulkSize = 2000           # How many documents should we store in memory before inserting them into the database in bulk?
     # List of documents that will be given to the database to be inserted to the collection in bulk.
     bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db["movie"], ordered = False)
     count = 0
@@ -34,7 +35,7 @@ def parse(mongo):
 
         count += 1
         if count % progressInterval == 0:
-            print("[movieLensLinks] " + str(count) + " lines processed so far. (" + str(int(count * 100 / progressTotal)) + "%%) (%0.2fs)" % (time.time() - startTime))
+            print("[movieLensLinks] %5d lines processed so far. (%d%%) (%0.2fs)" % ((count, int(count * 100 / progressTotal), time.time() - startTime)))
 
         curAttrs = line.split(",")
         curDict = {} # {mid : ***, imdbid: ***}
@@ -57,3 +58,10 @@ def parse(mongo):
     print("[movieLensLinks] Found " + str(count) + " movies.")
     print("[movieLensLinks] Skipped " + str(skipCount) + " insertions.")
 
+
+def main():
+    mongo = DataService.Mongo("movieLens")
+    parse(mongo)
+
+if __name__ == "__main__":
+    main()
