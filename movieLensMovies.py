@@ -35,7 +35,7 @@ def parse(mongo):
         if count == 1:
             continue
         if count % progressInterval == 0:
-            print("[movieLensMovies] %5d lines processed so far. (%d%%) (%0.2fs)" % ((count, int(count * 100 / progressTotal), time.time() - startTime)))
+            print("[movieLensMovies] %5d lines processed so far. (%d%%) (%0.2fs)" % (count, int(count * 100 / progressTotal), time.time() - startTime))
 
         mid = int(line[0])
         title = line[1]

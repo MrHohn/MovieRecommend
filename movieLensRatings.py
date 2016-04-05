@@ -39,7 +39,7 @@ def parse(mongo):
 
         count += 1
         if count % progressInterval == 0:
-            print("[movieLensRatings] %8d lines processed so far. (%d%%) (%0.2fs)" % ((count, int(count * 100 / progressTotal), time.time() - startTime)))
+            print("[movieLensRatings] %8d lines processed so far. (%d%%) (%0.2fs)" % (count, int(count * 100 / progressTotal), time.time() - startTime))
 
         curAttrs = line.split(",")
         curId = int(curAttrs[0])

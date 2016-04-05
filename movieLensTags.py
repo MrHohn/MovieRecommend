@@ -34,7 +34,7 @@ def parse(mongo):
 
         count += 1
         if count % progressInterval == 0:
-            print("[movieLensTags] %4d lines processed so far. (%d%%) (%0.2fs)" % ((count, int(count * 100 / progressTotal), time.time() - startTime)))
+            print("[movieLensTags] %4d lines processed so far. (%d%%) (%0.2fs)" % (count, int(count * 100 / progressTotal), time.time() - startTime))
 
         curAttrs = line.split("\t")
         curDict = {} # {tid : ***, content: ***, popular: ***}

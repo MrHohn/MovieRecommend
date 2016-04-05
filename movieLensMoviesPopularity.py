@@ -2,29 +2,26 @@ import DataService
 import pymongo
 import time
 
-# Parsing of MovieLens links.csv file.
+# Parsing of MovieLens Genome movies.dat file.
 # db name: movieLens
 # collection name: movie
 # Adds fields to collection:
-#       -movie id           (mid)
-#       -imdb id            (imdbid)
+#       -movie popularity     (popular)
 
 def parse(mongo):
-    progressInterval = 10000  # How often should we print a progress report to the console?
-    progressTotal = 34209     # Approximate number of total lines in the file.
-    bulkSize = 2000           # How many documents should we store in memory before inserting them into the database in bulk?
+    progressInterval = 3000   # How often should we print a progress report to the console?
+    progressTotal = 9734      # Approximate number of total lines in the file.
+    bulkSize = 500            # How many documents should we store in memory before inserting them into the database in bulk?
     # List of documents that will be given to the database to be inserted to the collection in bulk.
     bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db["movie"], ordered = False)
     count = 0
     skipCount = 0
 
-    print("[movieLensLinks] Starting Parse of links.csv")
+    print("[movieLensMoviesPopularity] Starting Parse of movies.dat")
     startTime = time.time()
 
     # open the ratings.csv and gather user's ratings into a list
-    inCSV = open("movielensdata/links.csv", "r")
-    # the first line is for attributes
-    attrLine = inCSV.readline()
+    inCSV = open("movielensdata/movies.dat", "r")
 
     # save all data in dict
     # output the data into MongoDB
@@ -35,13 +32,12 @@ def parse(mongo):
 
         count += 1
         if count % progressInterval == 0:
-            print("[movieLensLinks] %5d lines processed so far. (%d%%) (%0.2fs)" % (count, int(count * 100 / progressTotal), time.time() - startTime))
+            print("[movieLensMoviesPopularity] %4d lines processed so far. (%d%%) (%0.2fs)" % (count, int(count * 100 / progressTotal), time.time() - startTime))
 
-        curAttrs = line.split(",")
-        curDict = {} # {mid : ***, imdbid: ***}
-        curDict["mid"] = int(curAttrs[0])
-        curDict["imdbid"] = int(curAttrs[1])
-        bulkPayload.insert(curDict)
+        curAttrs = line.split("\t")
+        mid = int(curAttrs[0])
+        popular = int(curAttrs[2])
+        bulkPayload.find( {"mid": mid} ).update({"$set": { "popular": popular}})
         if count % bulkSize == 0:
             try:
                 bulkPayload.execute()
@@ -54,9 +50,9 @@ def parse(mongo):
         skipCount += len(e.details["writeErrors"])
 
 
-    print("[movieLensLinks] Parse Complete (%0.2fs)" % (time.time() - startTime))
-    print("[movieLensLinks] Found " + str(count) + " movies.")
-    print("[movieLensLinks] Skipped " + str(skipCount) + " insertions.")
+    print("[movieLensMoviesPopularity] Parse Complete (%0.2fs)" % (time.time() - startTime))
+    print("[movieLensMoviesPopularity] Found " + str(count) + " movies.")
+    print("[movieLensMoviesPopularity] Skipped " + str(skipCount) + " insertions.")
 
 
 def main():

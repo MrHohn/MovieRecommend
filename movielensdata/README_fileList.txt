@@ -11,4 +11,4 @@ From: http://grouplens.org/datasets/movielens/tag-genome/
 Potential files to be used by this project:
 *       -tag_relevance.dat
 *       -tags.dat
-        -movies.dat
+*       -movies.dat
