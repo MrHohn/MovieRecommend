@@ -1,8 +1,9 @@
 import DataService
+import pymongo
 import movieLensRatings
 import movieLensLinks
 import movieLensMovies
-import pymongo
+import movieLensTags
 
 def parseMovieLens():
     mongo = DataService.Mongo("movieLens")
@@ -22,6 +23,12 @@ def parseMovieLens():
     # Add movie titles into database.
     # runtime: (3.15s)
     movieLensMovies.parse(mongo)
+
+    # Add tags into database.
+    # runtime: (0.06s)
+    movieLensTags.parse(mongo)
+    mongo.db["tag"].create_index([("tid", pymongo.ASCENDING)])
+    print("[movieLensParser] Created index for tid in tag")
 
 
 def main():
