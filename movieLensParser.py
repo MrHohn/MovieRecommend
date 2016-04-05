@@ -5,6 +5,7 @@ import movieLensLinks
 import movieLensMovies
 import movieLensTags
 import movieLensMoviesPopularity
+import movieLensRelevance
 
 def parseMovieLens():
     mongo = DataService.Mongo("movieLens")
@@ -34,6 +35,10 @@ def parseMovieLens():
     # Add movies popularity into database.
     # runtime: (0.83s)
     movieLensMoviesPopularity.parse(mongo)
+
+    # Add tag relevance into database.
+    # runtime: (186.91s)
+    movieLensRelevance.parse(mongo)
 
 
 def main():

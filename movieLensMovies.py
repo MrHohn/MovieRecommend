@@ -25,8 +25,6 @@ def parse(mongo):
 
     # open the ratings.csv and gather user's ratings into a list
     inCSV = open("movielensdata/movies.csv", "r", encoding = "utf8")
-    # the first line is for attributes
-    attrLine = inCSV.readline()
 
     # output the data into MongoDB
     for line in csv.reader(inCSV, delimiter = ","):
@@ -39,7 +37,7 @@ def parse(mongo):
 
         mid = int(line[0])
         title = line[1]
-        bulkPayload.find( {"mid": mid} ).update({"$set": { "title": title}})
+        bulkPayload.find({"mid": mid} ).update({"$set": {"title": title}})
         bulkCount += 1
         if bulkCount >= bulkSize:
             try:

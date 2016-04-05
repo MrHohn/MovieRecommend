@@ -37,7 +37,7 @@ def parse(mongo):
         curAttrs = line.split("\t")
         mid = int(curAttrs[0])
         popular = int(curAttrs[2])
-        bulkPayload.find( {"mid": mid} ).update({"$set": { "popular": popular}})
+        bulkPayload.find( {"mid": mid} ).update({"$set": {"popular": popular}})
         if count % bulkSize == 0:
             try:
                 bulkPayload.execute()
