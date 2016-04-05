@@ -1,5 +1,6 @@
 import pymongo
 import time
+import csv
 
 # Parsing of MovieLens movies.csv file.
 # db name: movieLens
@@ -28,18 +29,16 @@ def parse(mongo):
 
     # save all data in dict
     # output the data into MongoDB
-    while 1:
-        line = inCSV.readline()
-        if not line:
-            break
-
+    for line in csv.reader(inCSV, delimiter = ","):
         count += 1
+        # skip the first line
+        if count == 1:
+            continue
         if count % progressInterval == 0:
             print("[movieLensMovies] " + str(count) + " lines processed so far. (" + str(int(count * 100 / progressTotal)) + "%%) (%0.2fs)" % (time.time() - startTime))
 
-        curAttrs = line.split(",")
-        mid = int(curAttrs[0])
-        title = curAttrs[1]
+        mid = int(line[0])
+        title = line[1]
         bulkPayload.find( {"mid": mid} ).update({"$set": { "title": title}})
         bulkCount += 1
         if bulkCount >= bulkSize:
