@@ -54,9 +54,14 @@ class MovieLensRecommend(object):
         recommend = []
         while not movies_pool.empty():
             cur_movie = movies_pool.get()
-            print("[MovieLensRecommend] Recommend movie ID: " + str(cur_movie.mid) + ", occurrences: " + str(cur_movie.count))
             recommend.append(cur_movie.mid)
-        print("[MovieLensRecommend] Recommend complete.")
+            # print("[MovieLensRecommend] Recommend movie ID: " + str(cur_movie.mid) + ", occurrences: " + str(cur_movie.count))
+
+        print("[MovieLensRecommend] -------- Recommend movies --------")
+        for movie_id in reversed(recommend):
+            movie_data = mongo.db["movie"].find_one({"mid": movie_id})
+            print("[MovieLensRecommend] imdbid: %6d, %s" % (movie_data["imdbid"],movie_data["title"]))
+        print("[MovieLensRecommend] -------- Recommend complete --------")
         return recommend
 
     # return top-10 similar users given an User ID
