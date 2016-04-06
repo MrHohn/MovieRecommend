@@ -31,29 +31,35 @@ class MovieLensRecommend(object):
                     movies_score[mid] += score
 
         # put all candidates to compete, gain top-k
-        movies_pool = queue.PriorityQueue()
-        for movie_id in movies_score:
-            movies_pool.put(Candidate(movie_id, movies_score[movie_id]))
-            # maintain the size
-            if movies_pool.qsize() > 20:
-                movies_pool.get()
-
-        recommend = []
-        while not movies_pool.empty():
-            cur_movie = movies_pool.get()
-            recommend.append(cur_movie.cid)
-            # print("[MovieLensRecommend] Recommend movie ID: " + str(cur_movie.cid) + ", score: " + str(cur_movie.score))
-
-        print("[MovieLensRecommend] -------- Recommend movies --------")
-        for movie_id in reversed(recommend):
+        recommend = self.gain_top_k(movies_score, 20)
+        print("[MovieLensRecommend] - Recommend movies: -")
+        for movie_id in recommend:
             movie_data = mongo.db["movie"].find_one({"mid": movie_id})
             print("[MovieLensRecommend] imdbid: %7d, %s" % (movie_data["imdbid"],movie_data["title"]))
-        print("[MovieLensRecommend] -------- Recommend complete --------")
+        print("[MovieLensRecommend] - Recommend complete. -")
         return recommend
 
     @classmethod
     def weight_tf_idf(self, tf, df, num_docs):
         return tf * math.log(float(num_docs) / df, 2)
+
+    # gain top-k candidates given a dictionary storing their scores
+    @classmethod
+    def gain_top_k(self, candidates, k):
+        candidates_pool = queue.PriorityQueue()
+        for cid in candidates:
+            candidates_pool.put(Candidate(cid, candidates[cid]))
+            # maintain the size
+            if candidates_pool.qsize() > k:
+                candidates_pool.get()
+
+        top_k = []
+        while not candidates_pool.empty():
+            cur_candidate = candidates_pool.get()
+            top_k.append(cur_candidate.cid)
+            # print("[MovieLensRecommend] Candidate id: " + str(cur_candidate.cid) + ", score: " + str(cur_candidate.score))
+        top_k.reverse()
+        return top_k
 
     # generate up to 20 movies recommendations given an User ID
     # the core idea is collaborative filtering (comparing occurrences)
@@ -90,24 +96,12 @@ class MovieLensRecommend(object):
                             movies_count[rating[0]] += 1
 
         # put all occurrences in to heap to gain top-k
-        movies_pool = queue.PriorityQueue()
-        for movie_id in movies_count:
-            movies_pool.put(Candidate(movie_id, movies_count[movie_id]))
-            # maintain the size
-            if movies_pool.qsize() > 20:
-                movies_pool.get()
-
-        recommend = []
-        while not movies_pool.empty():
-            cur_movie = movies_pool.get()
-            recommend.append(cur_movie.cid)
-            # print("[MovieLensRecommend] Recommend movie ID: " + str(cur_movie.cid) + ", occurrences: " + str(cur_movie.score))
-
-        print("[MovieLensRecommend] -------- Recommend movies --------")
-        for movie_id in reversed(recommend):
+        recommend = self.gain_top_k(movies_count, 20)
+        print("[MovieLensRecommend] - Recommend movies: -")
+        for movie_id in recommend:
             movie_data = mongo.db["movie"].find_one({"mid": movie_id})
             print("[MovieLensRecommend] imdbid: %7d, %s" % (movie_data["imdbid"],movie_data["title"]))
-        print("[MovieLensRecommend] -------- Recommend complete --------")
+        print("[MovieLensRecommend] - Recommend complete. -")
         return recommend
 
     # return top-10 similar users given an User ID
