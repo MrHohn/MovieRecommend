@@ -8,11 +8,57 @@ import queue
 # db name: movieLens
 
 class MovieLensRecommend(object):
-    
-    # generate up to 20 movies recommendations given an User ID
+
+    # generate up to 20 movies recommendations given a list of tags
+    # the core idea is tf.idf weight
     @classmethod
-    def recommend_movies_for_user(self, userID):
-        mongo = DataService.Mongo("movieLens")
+    def recommend_movies_based_on_tags(self, mongo, tags):
+        print("[MovieLensRecommend] Target tags: " + str(tags))
+        total_movies_num = 9734
+        movies_score = {}
+        for tid in tags:
+            cur_tag = mongo.db["tag"].find_one({"tid": tid})
+            cur_popular = cur_tag["popular"]
+            cur_movies = cur_tag["relevant_movie"]
+            for relevance_pair in cur_movies:
+                attrs = relevance_pair.split(",")
+                mid = int(attrs[0])
+                relevance = float(attrs[1])
+                score = self.weight_tf_idf(relevance, cur_popular, total_movies_num)
+                if mid not in movies_score:
+                    movies_score[mid] = score
+                else:
+                    movies_score[mid] += score
+
+        # put all candidates to compete, gain top-k
+        movies_pool = queue.PriorityQueue()
+        for movie_id in movies_score:
+            movies_pool.put(Candidate(movie_id, movies_score[movie_id]))
+            # maintain the size
+            if movies_pool.qsize() > 20:
+                movies_pool.get()
+
+        recommend = []
+        while not movies_pool.empty():
+            cur_movie = movies_pool.get()
+            recommend.append(cur_movie.cid)
+            # print("[MovieLensRecommend] Recommend movie ID: " + str(cur_movie.cid) + ", score: " + str(cur_movie.score))
+
+        print("[MovieLensRecommend] -------- Recommend movies --------")
+        for movie_id in reversed(recommend):
+            movie_data = mongo.db["movie"].find_one({"mid": movie_id})
+            print("[MovieLensRecommend] imdbid: %7d, %s" % (movie_data["imdbid"],movie_data["title"]))
+        print("[MovieLensRecommend] -------- Recommend complete --------")
+        return recommend
+
+    @classmethod
+    def weight_tf_idf(self, tf, df, num_docs):
+        return tf * math.log(float(num_docs) / df, 2)
+
+    # generate up to 20 movies recommendations given an User ID
+    # the core idea is collaborative filtering (comparing occurrences)
+    @classmethod
+    def recommend_movies_for_user(self, mongo, userID):
         target_user = mongo.db["user_rate"].find_one({"uid": userID})
         print("[MovieLensRecommend] Target user ID: [" + str(userID) + "]")
         # check if similar users were calculated
@@ -46,7 +92,7 @@ class MovieLensRecommend(object):
         # put all occurrences in to heap to gain top-k
         movies_pool = queue.PriorityQueue()
         for movie_id in movies_count:
-            movies_pool.put(Movie(movies_count[movie_id], movie_id))
+            movies_pool.put(Candidate(movie_id, movies_count[movie_id]))
             # maintain the size
             if movies_pool.qsize() > 20:
                 movies_pool.get()
@@ -54,17 +100,18 @@ class MovieLensRecommend(object):
         recommend = []
         while not movies_pool.empty():
             cur_movie = movies_pool.get()
-            recommend.append(cur_movie.mid)
-            # print("[MovieLensRecommend] Recommend movie ID: " + str(cur_movie.mid) + ", occurrences: " + str(cur_movie.count))
+            recommend.append(cur_movie.cid)
+            # print("[MovieLensRecommend] Recommend movie ID: " + str(cur_movie.cid) + ", occurrences: " + str(cur_movie.score))
 
         print("[MovieLensRecommend] -------- Recommend movies --------")
         for movie_id in reversed(recommend):
             movie_data = mongo.db["movie"].find_one({"mid": movie_id})
-            print("[MovieLensRecommend] imdbid: %6d, %s" % (movie_data["imdbid"],movie_data["title"]))
+            print("[MovieLensRecommend] imdbid: %7d, %s" % (movie_data["imdbid"],movie_data["title"]))
         print("[MovieLensRecommend] -------- Recommend complete --------")
         return recommend
 
     # return top-10 similar users given an User ID
+    # the core idea is cosine similarity
     @classmethod
     def get_similar_users(self, userID, mongo):
         print("[MovieLensRecommend] Start calculating similar users...")
@@ -104,7 +151,7 @@ class MovieLensRecommend(object):
             if len(cur_like) < 5:
                 continue
             cur_similarity = self.cosine_similarity(cur_like, target_like)
-            candidates.put(User(cur_similarity, cur_id))
+            candidates.put(Candidate(cur_id, cur_similarity))
             # maintain the pool size
             if candidates.qsize() > 10:
                 candidates.get()
@@ -113,8 +160,8 @@ class MovieLensRecommend(object):
         most_similar_users = []
         while not candidates.empty():
             cur_user = candidates.get()
-            most_similar_users.append(cur_user.uid)
-            # print("[MovieLensRecommend] uid: " + str(cur_user.uid) + ", score: " + str(cur_user.score))
+            most_similar_users.append(cur_user.cid)
+            # print("[MovieLensRecommend] uid: " + str(cur_user.cid) + ", score: " + str(cur_user.score))
         print("[MovieLensRecommend] Calculation complete.")
         mongo.db["user_rate"].update_one({"uid": target_id}, {"$set": {"similar_users": most_similar_users}}, True)
         print("[MovieLensRecommend] Stored similar users into DB.")
@@ -133,28 +180,32 @@ class MovieLensRecommend(object):
                 count += 1
         return count
 
-class User(object):
-    def __init__(self, score, uid):
+class Candidate(object):
+    def __init__(self, cid, score):
+        self.cid = cid
         self.score = score
-        self.uid = uid
 
     # less than interface, __cmp__ is gone in Python 3.4?
     def __lt__(self, other):
         return self.score < other.score
 
-class Movie(object):
-    def __init__(self, count, mid):
-        self.count = count
-        self.mid = mid
-
-    # less than interface, __cmp__ is gone in Python 3.4?
-    def __lt__(self, other):
-        return self.count < other.count
-
 
 def main():
+    mongo = DataService.Mongo("movieLens")
+
     # unit test, input: User ID = 4
-    MovieLensRecommend.recommend_movies_for_user(4)
+    print("[MovieLensRecommend] ***** Unit test for recommend_movies_for_user() *****")
+    MovieLensRecommend.recommend_movies_for_user(mongo, 4)
+
+    # unit test, input:
+    # 28:  adventure
+    # 387: feel-good
+    # 599: life
+    # 704: new york city
+    # 794: police
+    print("[MovieLensRecommend] ***** Unit test for recommend_movies_based_on_tags() *****")
+    tags = [28, 387, 599, 704, 794]
+    MovieLensRecommend.recommend_movies_based_on_tags(mongo, tags)
 
 if __name__ == "__main__":
     main()
