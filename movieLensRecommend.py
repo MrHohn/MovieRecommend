@@ -32,11 +32,7 @@ class MovieLensRecommend(object):
 
         # put all candidates to compete, gain top-k
         recommend = self.gain_top_k(movies_score, 20)
-        print("[MovieLensRecommend] - Recommend movies: -")
-        for movie_id in recommend:
-            movie_data = mongo.db["movie"].find_one({"mid": movie_id})
-            print("[MovieLensRecommend] imdbid: %7d, %s" % (movie_data["imdbid"],movie_data["title"]))
-        print("[MovieLensRecommend] - Recommend complete. -")
+        self.print_recommend(mongo, recommend)
         return recommend
 
     @classmethod
@@ -60,6 +56,15 @@ class MovieLensRecommend(object):
             # print("[MovieLensRecommend] Candidate id: " + str(cur_candidate.cid) + ", score: " + str(cur_candidate.score))
         top_k.reverse()
         return top_k
+
+    # given a list of recommendations, print out the movies information
+    @classmethod
+    def print_recommend(self, mongo, recommend):
+        print("[MovieLensRecommend] - Recommend movies: -")
+        for movie_id in recommend:
+            movie_data = mongo.db["movie"].find_one({"mid": movie_id})
+            print("[MovieLensRecommend] imdbid: %7d, %s" % (movie_data["imdbid"],movie_data["title"]))
+        print("[MovieLensRecommend] - Recommend complete. -")
 
     # generate up to 20 movies recommendations given an User ID
     # the core idea is collaborative filtering (comparing occurrences)
@@ -97,11 +102,7 @@ class MovieLensRecommend(object):
 
         # put all occurrences in to heap to gain top-k
         recommend = self.gain_top_k(movies_count, 20)
-        print("[MovieLensRecommend] - Recommend movies: -")
-        for movie_id in recommend:
-            movie_data = mongo.db["movie"].find_one({"mid": movie_id})
-            print("[MovieLensRecommend] imdbid: %7d, %s" % (movie_data["imdbid"],movie_data["title"]))
-        print("[MovieLensRecommend] - Recommend complete. -")
+        self.print_recommend(mongo, recommend)
         return recommend
 
     # return top-10 similar users given an User ID
@@ -189,7 +190,8 @@ def main():
 
     # unit test, input: User ID = 4
     print("[MovieLensRecommend] ***** Unit test for recommend_movies_for_user() *****")
-    MovieLensRecommend.recommend_movies_for_user(mongo, 4)
+    user_id = 4
+    MovieLensRecommend.recommend_movies_for_user(mongo, user_id)
 
     # unit test, input:
     # 28:  adventure
