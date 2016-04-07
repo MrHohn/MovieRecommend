@@ -12,10 +12,13 @@ import csv
 def parse(mongo):
     progressInterval = 200000 # How often should we print a progress report to the console?
     progressTotal = 10979952  # Approximate number of total lines in the file.
-    bulkSize = 2000           # How many documents should we store in memory before inserting them into the database in bulk?
-    # List of documents that will be given to the database to be inserted to the collection in bulk.
-    bulkCount = 0
-    bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db["tag"], ordered = False)
+    bulkSize_tag = 2000       # How many documents should we store in memory before inserting them into the database in bulk?
+    bulkCount_tag = 0
+    bulkPayload_tag = pymongo.bulk.BulkOperationBuilder(mongo.db["tag"], ordered = False)
+    bulkSize_movie = 300      # How many documents should we store in memory before inserting them into the database in bulk?
+    bulkPayload_movie = pymongo.bulk.BulkOperationBuilder(mongo.db["movie"], ordered = False)
+    bulkCount_movie = 0
+    tag_num = 1128
     count = 0
     skipCount = 0
 
@@ -26,6 +29,7 @@ def parse(mongo):
     inCSV = open("movielensdata/tag_relevance.dat", "r", encoding = "utf8")
 
     # output the data into MongoDB
+    tags_relevance = []
     for line in csv.reader(inCSV, delimiter = "\t"):
         count += 1
         if count % progressInterval == 0:
@@ -36,19 +40,44 @@ def parse(mongo):
         relevant_score = float(line[2])
         # consider only the relevant tag
         if relevant_score >= 0.5:
-            cur_relevance = str(mid) + "," + str(relevant_score)
-            bulkPayload.find({"tid": tid}).update({"$push": {"relevant_movie": cur_relevance}})
-            bulkCount += 1
-        if bulkCount >= bulkSize:
+            # append the new movie to tag
+            cur_movie_relevance = str(mid) + "," + str(relevant_score)
+            bulkPayload_tag.find({"tid": tid}).update({"$push": {"relevant_movie": cur_movie_relevance}})
+            bulkCount_tag += 1
+            # append the new tag to movie
+            cur_tag_relevance = str(tid) + "," + str(relevant_score)
+            tags_relevance.append(cur_tag_relevance)
+
+        if count % tag_num == 0:
+            bulkPayload_movie.find({"mid": mid} ).update({"$set": {"tags": tags_relevance}})
+            bulkCount_movie += 1
+            tags_relevance = []
+
+        if bulkCount_tag >= bulkSize_tag:
             try:
-                bulkPayload.execute()
+                bulkPayload_tag.execute()
             except pymongo.errors.OperationFailure as e:
                 skipCount += len(e.details["writeErrors"])
-            bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db["tag"], ordered = False)
-            bulkCount = 0
-    if bulkCount >= 0:
+            bulkPayload_tag = pymongo.bulk.BulkOperationBuilder(mongo.db["tag"], ordered = False)
+            bulkCount_tag = 0
+
+        if bulkCount_movie >= bulkSize_movie:
+            try:
+                bulkPayload_movie.execute()
+            except pymongo.errors.OperationFailure as e:
+                skipCount += len(e.details["writeErrors"])
+            bulkPayload_movie = pymongo.bulk.BulkOperationBuilder(mongo.db["movie"], ordered = False)
+            bulkCount_movie = 0
+
+    if bulkCount_tag >= 0:
         try:
-            bulkPayload.execute()
+            bulkPayload_tag.execute()
+        except pymongo.errors.OperationFailure as e:
+            skipCount += len(e.details["writeErrors"])
+
+    if bulkCount_movie >= 0:
+        try:
+            bulkPayload_movie.execute()
         except pymongo.errors.OperationFailure as e:
             skipCount += len(e.details["writeErrors"])
 

@@ -37,7 +37,7 @@ def parseMovieLens():
     movieLensMoviesPopularity.parse(mongo)
 
     # Add tag relevance into database.
-    # runtime: (186.91s)
+    # runtime: (509.09s)
     movieLensRelevance.parse(mongo)
 
 

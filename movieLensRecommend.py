@@ -10,7 +10,7 @@ import queue
 class MovieLensRecommend(object):
 
     # generate up to 20 movies recommendations given a list of tags
-    # the core idea is tf.idf weight
+    # the core idea is tf.idf weight (content-based search)
     @classmethod
     def recommend_movies_based_on_tags(self, mongo, tags):
         print("[MovieLensRecommend] Target tags: " + str(tags))
