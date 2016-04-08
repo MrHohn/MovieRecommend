@@ -9,6 +9,75 @@ import queue
 
 class MovieLensRecommend(object):
 
+    # generate up to 10 movies recommendations given a movie id
+    # the core idea is cosine similarity
+    @classmethod
+    def recommend_movies_for_movie(self, mongo, mid):
+        print("[MovieLensRecommend] Target movie id: " + str(mid))
+        target_movie = mongo.db["movie"].find_one({"mid": mid})
+        if "similar_movies" in target_movie:
+            print("[MovieLensRecommend] Similar movies calculated.")
+            most_similar_movies = target_movie["similar_movies"]
+        else:
+            print("[MovieLensRecommend] Similar movies not calculated.")
+            if "tags" not in target_movie:
+                print("[MovieLensRecommend] No tagging info found, unable to recommend.")
+                return
+            print("[MovieLensRecommend] Tagging info found, now start calculating...")
+            target_mid = mid
+            target_tags_score = target_movie["tags"]
+            target_tags = set()
+            for tag_score in target_tags_score:
+                attrs = tag_score.split(",")
+                target_tags.add(int(attrs[0]))
+
+            progressInterval = 2000   # How often should we print a progress report to the console?
+            progressTotal = 34028     # Approximate number of total users
+            count = 0                 # Counter for progress
+
+            # Scan through all movies in database and calculate similarity
+            startTime = time.time()
+            # maintain a min heap for top k candidates
+            candidates = queue.PriorityQueue()
+            cursor = mongo.db["movie"].find({})
+            for cur_movie in cursor:
+                count += 1
+                if count % progressInterval == 0:
+                    print("[MovieLensRecommend] %6d movies processed so far. (%d%%) (%0.2fs)" % ((count, int(count * 100 / progressTotal), time.time() - startTime)))
+
+                # skip non-tagged movie
+                if "tags" not in cur_movie:
+                    continue
+
+                cur_id = cur_movie["mid"]
+                if cur_id == target_mid:
+                    continue
+
+                cur_tags_score = cur_movie["tags"]
+                cur_tags = set()
+                for tag_score in cur_tags_score:
+                    attrs = tag_score.split(",")
+                    cur_tags.add(int(attrs[0]))
+
+                cur_similarity = self.cosine_similarity(cur_tags, target_tags)
+                candidates.put(Candidate(cur_id, cur_similarity))
+                # maintain the pool size
+                if candidates.qsize() > 10:
+                    candidates.get()
+
+            # now print out and return top 10 candidates
+            most_similar_movies = []
+            while not candidates.empty():
+                cur_movie = candidates.get()
+                most_similar_movies.append(cur_movie.cid)
+                # print("[MovieLensRecommend] uid: " + str(cur_movie.cid) + ", score: " + str(cur_movie.score))
+            print("[MovieLensRecommend] Calculation complete.")
+            mongo.db["movie"].update_one({"mid": target_mid}, {"$set": {"similar_movies": most_similar_movies}}, True)
+            print("[MovieLensRecommend] Stored similar movies into DB.")
+
+        self.print_recommend(mongo, most_similar_movies)
+        return most_similar_movies
+
     # generate up to 20 movies recommendations given a list of tags
     # the core idea is tf.idf weight (content-based search)
     @classmethod
@@ -78,7 +147,7 @@ class MovieLensRecommend(object):
             most_similar_users = target_user["similar_users"]
         else:
             print("[MovieLensRecommend] Similar users not calculated.")
-            most_similar_users = self.get_similar_users(userID, mongo)
+            most_similar_users = self.get_similar_users(mongo, userID)
         print("[MovieLensRecommend] Similar users retrieved.")
         print("[MovieLensRecommend] Start generating recommend movies...")
         # gain target user history
@@ -108,10 +177,10 @@ class MovieLensRecommend(object):
     # return top-10 similar users given an User ID
     # the core idea is cosine similarity
     @classmethod
-    def get_similar_users(self, userID, mongo):
+    def get_similar_users(self, mongo, userID):
         print("[MovieLensRecommend] Start calculating similar users...")
         target_user = mongo.db["user_rate"].find_one({"uid": userID})
-        target_id = target_user["uid"]
+        target_id = userID
         target_like = set()
         for rating in target_user["ratings"]:
             if rating[1] >= 3.5:
@@ -202,6 +271,11 @@ def main():
     print("[MovieLensRecommend] ***** Unit test for recommend_movies_based_on_tags() *****")
     tags = [28, 387, 599, 704, 794]
     MovieLensRecommend.recommend_movies_based_on_tags(mongo, tags)
+
+    # unit test, input: Movie ID = 1 "Toy Story (1995)"
+    print("[MovieLensRecommend] ***** Unit test for recommend_movies_for_movie() *****")
+    movie_id = 1
+    MovieLensRecommend.recommend_movies_for_movie(mongo, movie_id)
 
 if __name__ == "__main__":
     main()
