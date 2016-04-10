@@ -7,16 +7,16 @@ class Twitter(object):
 
     @classmethod
     def __init__(self):
-        # Twitter App: MovieRecommend_1
-        # rate limit reference: https://dev.twitter.com/rest/public/rate-limiting
-        consumer_key = "9jyaCfMCKwR41rwYZ5SY5UQPm"
-        consumer_secret = "Tdvg4T5dO8pIsl4u4oyBO4CxT3LNDdfyJwDfNMyeFRp4edItH1"
-        access_token = "2765845462-Vdt47S1Tg7plnoD6OUkRGhzRoRJ7SgtiPozft87"
-        access_token_secret = "QMXafe5KIYqWwSSMRBOPNo1sGrEn3RWD8eglCujxJlJzL"
+        # create Twitter Apps: https://apps.twitter.com/
+        consumer_key = ""
+        consumer_secret = ""
+        access_token = ""
+        access_token_secret = ""
 
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
         auth.set_access_token(access_token, access_token_secret)
 
+        # rate limit reference: https://dev.twitter.com/rest/public/rate-limiting
         self.api = tweepy.API(auth)
         print("[Twitter] Tweepy initialized.")
 
