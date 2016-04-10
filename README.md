@@ -6,4 +6,4 @@ A movie recommender system based on Information Retrieval and Data Integration T
 - [Facebook API](https://developers.facebook.com/docs/graph-api/)
 - [Offline IMDB Data](http://www.imdb.com/interfaces)
 - [Online IMDB API](http://www.omdbapi.com/)
-- [Twitter REST APIs](https://dev.twitter.com/rest/public/)
+- [Tweepy: Twitter for Python!](https://github.com/tweepy/tweepy)
