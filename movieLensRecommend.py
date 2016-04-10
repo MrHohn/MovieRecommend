@@ -10,7 +10,7 @@ import queue
 class MovieLensRecommend(object):
 
     # generate up to 10 movies recommendations given a movie id
-    # the core idea is cosine similarity
+    # the core idea is cosine similarity between tags list
     @classmethod
     def recommend_movies_for_movie(self, mongo, mid):
         print("[MovieLensRecommend] Target movie id: " + str(mid))
@@ -79,7 +79,7 @@ class MovieLensRecommend(object):
         return most_similar_movies
 
     # generate up to 20 movies recommendations given a list of tags
-    # the core idea is tf.idf weight (content-based search)
+    # the core idea is tf.idf weight (content-based query)
     @classmethod
     def recommend_movies_based_on_tags(self, mongo, tags):
         print("[MovieLensRecommend] Target tags: " + str(tags))
@@ -136,7 +136,7 @@ class MovieLensRecommend(object):
         print("[MovieLensRecommend] - Recommend complete. -")
 
     # generate up to 20 movies recommendations given an User ID
-    # the core idea is collaborative filtering (comparing occurrences)
+    # the core idea is collaborative filtering (comparing movie occurrences)
     @classmethod
     def recommend_movies_for_user(self, mongo, userID):
         target_user = mongo.db["user_rate"].find_one({"uid": userID})
@@ -175,7 +175,7 @@ class MovieLensRecommend(object):
         return recommend
 
     # return top-10 similar users given an User ID
-    # the core idea is cosine similarity
+    # the core idea is cosine similarity between user like list
     @classmethod
     def get_similar_users(self, mongo, userID):
         print("[MovieLensRecommend] Start calculating similar users...")
