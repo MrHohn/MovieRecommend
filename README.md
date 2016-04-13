@@ -7,3 +7,5 @@ A movie recommender system based on Information Retrieval and Data Integration T
 - [Offline IMDB Data](http://www.imdb.com/interfaces)
 - [Online IMDB API](http://www.omdbapi.com/)
 - [Tweepy: Twitter for Python!](https://github.com/tweepy/tweepy)
+- [Twitter REST APIs](https://dev.twitter.com/rest/public)
+- [Affective Norms for English Words](http://www.uvm.edu/~pdodds/teaching/courses/2009-08UVM-300/docs/others/everything/bradley1999a.pdf)
