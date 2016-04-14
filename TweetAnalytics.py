@@ -44,23 +44,24 @@ class Sentiment(object):
 
 # unfinished
 def tokenize(sentence):
-    words = re.split("\s|\.|;|,|\*|\n", sentence)
-    # print(words)
+    words = re.split("\s|\.|;|,|\*|\n|!|'|\"", sentence)
     res = []
     for word in words:
-        if word != " ":
+        if len(word) > 0:
             res.append(stemming(word))
+    # print(res)
     return res
 
 # unfinished
 # handle empty or invalid word, and stem word
 def stemming(word):
-    return word
+    return word.lower()
 
 
 def main():
     sentiment = Sentiment()
-    sentence = "Congrats to @HCP_Nevada on their health care headliner win"
+    # sentence = "Congrats to @HCP_Nevada on their health care headliner win"
+    sentence = "b'I love you @iHeartRadio! I love you hooligans! love you Sriracha. I love you @LeoDiCaprio. Thinking of u @holyfield  https://t.co/iPoHf03G4R'"
     print("[TweetAnalytics] Evaluating sentence: " + sentence)
     score = sentiment.gain_sentiment(sentence)
     print("[TweetAnalytics] Sentiment score: " + str(score))

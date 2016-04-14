@@ -86,7 +86,7 @@ class Tweepy(object):
 def main():
     twitter = Tweepy()
     twitter.get_user_profile("BrunoMars")
-    twitter.get_user_tweets("BrunoMars", 5) # second input is optional, default is 3200
+    twitter.get_user_tweets("BrunoMars", 5) # second input is optional, default is 3,200
     twitter.get_user_following("BrunoMars")
 
 if __name__ == "__main__":
