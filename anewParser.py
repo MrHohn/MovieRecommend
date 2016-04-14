@@ -44,7 +44,10 @@ def parse(mongo):
         	cur_dict["frequency"] = int(cur_frequency)
         anewAllList[cur_word] = cur_dict
 
-    mongo.db["list"].insert_one(anewAllList)
+    doc = {}
+    doc["type"] = "all"
+    doc["dict"] = anewAllList
+    mongo.db["list"].insert_one(doc)
     print("[anewAll] Parse Complete (%0.2fs)" % (time.time() - startTime))
     print("[anewAll] Found " + str(count) + " words.")
 
@@ -52,7 +55,7 @@ def parseANEW():
     mongo = DataService.Mongo("anew")
 
     # Add ANEW all list into database.
-    # runtime: ()
+    # runtime: (0.05s)
     parse(mongo)
 
 
