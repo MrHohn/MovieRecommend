@@ -60,7 +60,7 @@ class Tweepy(object):
         return tweet_list
 
     @classmethod
-    def get_user_hashtags(self, screen_name, tweet_list):
+    def get_user_hashtags(self, tweet_list):
         all_tags = set()
         for tweet in tweet_list:
             cur_tags = tweet.entities["hashtags"]
@@ -68,6 +68,19 @@ class Tweepy(object):
                 # print(tag)
                 all_tags.add(tag["text"])
         return all_tags
+
+    @classmethod
+    def get_user_mentions(self, tweet_list):
+        all_mentions = []
+        duplicate_detect = set()
+        for tweet in tweet_list:
+            cur_mentions = tweet.entities["user_mentions"]
+            for mention in cur_mentions:
+                # print(mention)
+                if mention["screen_name"] not in duplicate_detect:
+                    duplicate_detect.add(mention["screen_name"])
+                    all_mentions.append(mention)
+        return all_mentions
 
     @classmethod
     def get_user_followings(self, screen_name):
@@ -131,10 +144,15 @@ def main():
     for tweet in tweet_list:
         print("[Twitter] Tweet: " + str(tweet.text.encode("utf8")))
 
-    # unit test for get_user_tweets(screen_name, tweet_list)
-    hashtags = twitter.get_user_hashtags("BrunoMars", tweet_list)
+    # unit test for get_user_hashtags(tweet_list)
+    hashtags = twitter.get_user_hashtags(tweet_list)
     for tag in hashtags:
         print("[Twitter] Tag: " + tag)
+
+    # unit test for get_user_mentions(tweet_list)
+    mentions = twitter.get_user_mentions(tweet_list)
+    for mention in mentions:
+        print("[Twitter] Mention screen_name: " + mention["screen_name"])
 
     # unit test for get_user_followings(screen_name)
     followings = twitter.get_user_followings("BrunoMars")
