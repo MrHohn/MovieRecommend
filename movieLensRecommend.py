@@ -230,7 +230,7 @@ class MovieLensRecommend(object):
             cur_user = candidates.get()
             most_similar_users.append(cur_user.cid)
             # print("[MovieLensRecommend] uid: " + str(cur_user.cid) + ", score: " + str(cur_user.score))
-        print("[MovieLensRecommend] Calculation complete.")
+        print("[MovieLensRecommend] Calculation complete (%0.2fs)" % (time.time() - startTime))
         self.mongo.db["user_rate"].update_one({"uid": target_id}, {"$set": {"similar_users": most_similar_users}}, True)
         print("[MovieLensRecommend] Stored similar users into DB.")
         return most_similar_users

@@ -1,4 +1,6 @@
+import DataService
 import tweepy
+import time
 
 # Twitter interface based on Tweepy
 # Tweepy repo: https://github.com/tweepy/tweepy
@@ -27,10 +29,9 @@ class Tweepy(object):
 
     @classmethod
     def get_user_profile(self, screen_name):
-        print("[Twitter] Getting user profile...")
+        print("[Twitter] Getting user basic profile...")
         # Get the User object from twitter...
         user = self.api.get_user(screen_name)
-        print(user.name)
         profile = {}
         profile["screen_name"] = user.screen_name
         profile["name"] = user.name
@@ -89,7 +90,7 @@ class Tweepy(object):
         friend_count = 0
         print("[Twitter] Getting user friends...")
         for user in tweepy.Cursor(self.api.friends, id=screen_name).items():
-            friend_list.append(user.screen_name)
+            friend_list.append(user)
             friend_count += 1
         print("[Twitter] Retrieved friends count: " + str(friend_count))
         return friend_list
@@ -99,7 +100,11 @@ class Tweepy(object):
         # reference: https://dev.twitter.com/rest/reference/get/users/suggestions
         print("[Twitter] Getting user suggested categories...")
         user = self.api.get_user(screen_name)
-        return user._api.suggested_categories()
+        categories = user._api.suggested_categories()
+        res = []
+        for cate in categories:
+            res.append(cate.slug)
+        return res
 
     @classmethod
     def get_suggested_users(self, screen_name, category):
@@ -123,56 +128,106 @@ class Tweepy(object):
         print("[Twitter] Retrieved likes count: " + str(like_count))
         return like_list
 
+    @classmethod
+    def print_basic_profile(self, profile):
+        print("[Twitter] User screen_name: " + profile["screen_name"])
+        print("[Twitter] User name: " + profile["name"])
+        print("[Twitter] User id: " + str(profile["id"]))
+        print("[Twitter] User location: " + profile["location"])
+        print("[Twitter] User followers_count: " + str(profile["followers_count"]))
+        print("[Twitter] User friends_count: " + str(profile["friends_count"]))
+        print("[Twitter] User statuses_count: " + str(profile["statuses_count"]))
+        print("[Twitter] User profile_image_url: " + profile["profile_image_url"])
+        print("[Twitter] User language: " + profile["lang"])
+
+    @classmethod
+    def extract_profile(self, screen_name):
+        print("[Twitter] Start Twitter Profile extraction.")
+        print("[Twitter] Target user: " + screen_name)
+        startTime = time.time()
+
+        # unit test for get_user_profile(screen_name)
+        profile = self.get_user_profile(screen_name)
+        # self.print_basic_profile(profile)
+
+        extracted_tags = set()
+        extracted_tweets = set()
+        extracted_screen_name = set()
+        extracted_users = []
+
+        # unit test for get_user_tweets(screen_name, count)
+        tweet_list = self.get_user_tweets(screen_name) # second argument is optional, default is 3,200
+        for tweet in tweet_list:
+            extracted_tweets.add(tweet.text)
+            # print("[Twitter] Tweet: " + str(tweet.text.encode("utf8")))
+
+        # unit test for get_user_hashtags(tweet_list)
+        hashtags = self.get_user_hashtags(tweet_list)
+        for tag in hashtags:
+            extracted_tags.add(tag)
+            # print("[Twitter] Tag: " + tag)
+
+        # unit test for get_user_mentions(tweet_list)
+        mentions = self.get_user_mentions(tweet_list)
+        for mention in mentions:
+            if mention["screen_name"] not in extracted_screen_name:
+                extracted_screen_name.add(mention["screen_name"])
+                extracted_users.append([mention["screen_name"], mention["name"]])
+            # print("[Twitter] Mention screen_name: " + mention["screen_name"])
+
+        # unit test for get_user_likes(screen_name, count)
+        like_list = self.get_user_likes(screen_name) # second argument is optional, default is 1,000
+        for like in like_list:
+            extracted_tweets.add(like.text)
+            # print("[Twitter] Like: " + str(like.text.encode("utf8")))
+
+        # unit test for get_user_hashtags(tweet_list)
+        hashtags = self.get_user_hashtags(like_list)
+        for tag in hashtags:
+            extracted_tags.add(tag)
+            # print("[Twitter] Tag: " + tag)
+
+        # unit test for get_user_mentions(tweet_list)
+        mentions = self.get_user_mentions(like_list)
+        for mention in mentions:
+            if mention["screen_name"] not in extracted_screen_name:
+                extracted_screen_name.add(mention["screen_name"])
+                extracted_users.append([mention["screen_name"], mention["name"]])
+            # print("[Twitter] Mention screen_name: " + mention["screen_name"])
+
+        # unit test for get_user_followings(screen_name)
+        followings = self.get_user_followings(screen_name)
+        for following in followings:
+            if following.screen_name not in extracted_screen_name:
+                extracted_screen_name.add(following.screen_name)
+                extracted_users.append([following.screen_name, following.name])
+            # print("[Twitter] Friend's screen_name: " + following.screen_name)
+
+        # unit test for get_suggested_categories(screen_name)
+        categories = self.get_suggested_categories(screen_name)
+        profile["suggested_categories"] = categories
+        # for category in categories:
+        #     print("[Twitter] Suggested category: " + category)
+
+        # # unit test for get_suggested_users(screen_name)
+        # users = self.get_suggested_users(screen_name, "Television")
+        # for user in users:
+        #     print("[Twitter] Suggested user: " + user.name)
+
+        profile["extracted_tags"] = list(extracted_tags)
+        profile["extracted_tweets"] = list(extracted_tweets)
+        profile["extracted_users"] = extracted_users
+
+        mongo = DataService.Mongo("movieRecommend")
+        print("[Twitter] Inserting user profile into database...")
+        mongo.db["user_profiles"].insert_one(profile)
+        print("[Twitter] Extraction done (%0.2fs)." % (time.time() - startTime))
+
 
 def main():
     twitter = Tweepy()
-
-    # unit test for get_user_profile(screen_name)
-    profile = twitter.get_user_profile("BrunoMars")
-    print("[Twitter] User screen_name: " + profile["screen_name"])
-    print("[Twitter] User name: " + profile["name"])
-    print("[Twitter] User id: " + str(profile["id"]))
-    print("[Twitter] User location: " + profile["location"])
-    print("[Twitter] User followers_count: " + str(profile["followers_count"]))
-    print("[Twitter] User friends_count: " + str(profile["friends_count"]))
-    print("[Twitter] User statuses_count: " + str(profile["statuses_count"]))
-    print("[Twitter] User profile_image_url: " + profile["profile_image_url"])
-    print("[Twitter] User language: " + profile["lang"])
-
-    # unit test for get_user_tweets(screen_name, count)
-    tweet_list = twitter.get_user_tweets("BrunoMars", 5) # second argument is optional, default is 3,200
-    for tweet in tweet_list:
-        print("[Twitter] Tweet: " + str(tweet.text.encode("utf8")))
-
-    # unit test for get_user_hashtags(tweet_list)
-    hashtags = twitter.get_user_hashtags(tweet_list)
-    for tag in hashtags:
-        print("[Twitter] Tag: " + tag)
-
-    # unit test for get_user_mentions(tweet_list)
-    mentions = twitter.get_user_mentions(tweet_list)
-    for mention in mentions:
-        print("[Twitter] Mention screen_name: " + mention["screen_name"])
-
-    # unit test for get_user_followings(screen_name)
-    followings = twitter.get_user_followings("BrunoMars")
-    for following in followings:
-        print("[Twitter] Friend's screen_name: " + following)
-
-    # unit test for get_suggested_categories(screen_name)
-    categories = twitter.get_suggested_categories("BrunoMars")
-    for category in categories:
-        print("[Twitter] Suggested category: " + category.name)
-
-    # unit test for get_suggested_users(screen_name)
-    users = twitter.get_suggested_users("BrunoMars", "Television")
-    for user in users:
-        print("[Twitter] Suggested user: " + user.name)
-
-    # unit test for get_user_likes(screen_name, count)
-    like_list = twitter.get_user_likes("BrunoMars", 5) # second argument is optional, default is 1,000
-    for like in like_list:
-        print("[Twitter] Like: " + str(like.text.encode("utf8")))
+    # twitter.get_rate_limit()
+    twitter.extract_profile("BrunoMars")
 
 if __name__ == "__main__":
     main()
