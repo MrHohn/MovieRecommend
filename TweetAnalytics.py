@@ -3,9 +3,12 @@ import pymongo
 import time
 import re
 import math
+from textblob import TextBlob
 
 # Sentiment degree calculation is referring Visualizing Twitter Sentiment from NCSU
 # https://www.csc.ncsu.edu/faculty/healey/tweet_viz/
+
+# Text Processing reference: https://textblob.readthedocs.org/en/dev/index.html
 
 class Sentiment(object):
 
@@ -44,7 +47,9 @@ class Sentiment(object):
 
 # unfinished
 def tokenize(sentence):
-    words = re.split("\s|\.|;|,|\*|\n|!|'|\"", sentence)
+    # words = re.split("\s|\.|;|,|\*|\n|!|'|\"", sentence)
+    text = TextBlob(sentence)
+    words = text.words
     res = []
     for word in words:
         if len(word) > 0:
@@ -61,7 +66,8 @@ def stemming(word):
 def main():
     sentiment = Sentiment()
     # sentence = "Congrats to @HCP_Nevada on their health care headliner win"
-    sentence = "b'I love you @iHeartRadio! I love you hooligans! love you Sriracha. I love you @LeoDiCaprio. Thinking of u @holyfield  https://t.co/iPoHf03G4R'"
+    # sentence = "b'I love you @iHeartRadio! I love you hooligans! love you Sriracha. I love you @LeoDiCaprio. Thinking of u @holyfield  https://t.co/iPoHf03G4R'"
+    sentence = "The secret life of Walter Mitty is a fantastic movie"
     print("[TweetAnalytics] Evaluating sentence: " + sentence)
     score = sentiment.gain_sentiment(sentence)
     print("[TweetAnalytics] Sentiment score: " + str(score))
