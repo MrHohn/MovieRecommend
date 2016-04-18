@@ -30,8 +30,10 @@ class Tweepy(object):
         print("[Twitter] Getting user profile...")
         # Get the User object from twitter...
         user = self.api.get_user(screen_name)
+        print(user.name)
         profile = {}
         profile["screen_name"] = user.screen_name
+        profile["name"] = user.name
         profile["id"] = user.id
         profile["location"] = user.location
         profile["followers_count"] = user.followers_count
@@ -56,6 +58,16 @@ class Tweepy(object):
                 break
         print("[Twitter] Retrieved tweets count: " + str(tweet_count))
         return tweet_list
+
+    @classmethod
+    def get_user_hashtags(self, screen_name, tweet_list):
+        all_tags = set()
+        for tweet in tweet_list:
+            cur_tags = tweet.entities["hashtags"]
+            for tag in cur_tags:
+                # print(tag)
+                all_tags.add(tag["text"])
+        return all_tags
 
     @classmethod
     def get_user_followings(self, screen_name):
@@ -105,6 +117,7 @@ def main():
     # unit test for get_user_profile(screen_name)
     profile = twitter.get_user_profile("BrunoMars")
     print("[Twitter] User screen_name: " + profile["screen_name"])
+    print("[Twitter] User name: " + profile["name"])
     print("[Twitter] User id: " + str(profile["id"]))
     print("[Twitter] User location: " + profile["location"])
     print("[Twitter] User followers_count: " + str(profile["followers_count"]))
@@ -118,7 +131,12 @@ def main():
     for tweet in tweet_list:
         print("[Twitter] Tweet: " + str(tweet.text.encode("utf8")))
 
-    # unit test for get_user_tweets(screen_name)
+    # unit test for get_user_tweets(screen_name, tweet_list)
+    hashtags = twitter.get_user_hashtags("BrunoMars", tweet_list)
+    for tag in hashtags:
+        print("[Twitter] Tag: " + tag)
+
+    # unit test for get_user_followings(screen_name)
     followings = twitter.get_user_followings("BrunoMars")
     for following in followings:
         print("[Twitter] Friend's screen_name: " + following)
