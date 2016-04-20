@@ -1,4 +1,4 @@
-import DataService
+from DataService import Mongo
 import pymongo
 import movieLensRatings
 import movieLensLinks
@@ -6,9 +6,12 @@ import movieLensMovies
 import movieLensTags
 import movieLensMoviesPopularity
 import movieLensRelevance
+import time
 
 def parseMovieLens():
-    mongo = DataService.Mongo("movieLens")
+    mongo = Mongo("movieRecommend")
+
+    startTime = time.time()
 
     # Add all user ratings into database.
     # runtime: (172.95s)
@@ -39,6 +42,8 @@ def parseMovieLens():
     # Add tag relevance into database.
     # runtime: (509.09s)
     movieLensRelevance.parse(mongo)
+
+    print("[movieLensParser] Parse done (%0.2fs)." % (time.time() - startTime))
 
 
 def main():

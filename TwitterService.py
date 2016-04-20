@@ -222,12 +222,18 @@ class Tweepy(object):
         print("[Twitter] Inserting user profile into database...")
         mongo.db["user_profiles"].insert_one(profile)
         print("[Twitter] Extraction done (%0.2fs)." % (time.time() - startTime))
+        return profile
 
 
 def main():
     twitter = Tweepy()
     # twitter.get_rate_limit()
-    twitter.extract_profile("BrunoMars")
+    # twitter.extract_profile("BrunoMars")
+    # cats = twitter.get_suggested_categories("BrunoMars")
+    # cats = twitter.get_suggested_categories("LeoDiCaprio")
+    # cats = twitter.get_suggested_categories("johnydepp007")
+    cats = twitter.get_suggested_categories("ZihongZ")
+    print(cats)
 
 if __name__ == "__main__":
     main()

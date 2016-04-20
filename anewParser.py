@@ -1,11 +1,11 @@
-import DataService
+from DataService import Mongo
 import pymongo
 import time
 import csv
 
 # Parsing of ANEW all.csv file.
-# db name: anew
-# collection name: list
+# db name: movieRecommend
+# collection name: anew
 # Adds fields to collection:
 #       -ANEW "all" list  (with "type" = "all")
 
@@ -47,12 +47,12 @@ def parse(mongo):
     doc = {}
     doc["type"] = "all"
     doc["dict"] = anewAllList
-    mongo.db["list"].insert_one(doc)
+    mongo.db["anew"].insert_one(doc)
     print("[anewAll] Parse Complete (%0.2fs)" % (time.time() - startTime))
     print("[anewAll] Found " + str(count) + " words.")
 
 def parseANEW():
-    mongo = DataService.Mongo("anew")
+    mongo = Mongo("movieRecommend")
 
     # Add ANEW all list into database.
     # runtime: (0.05s)

@@ -3,7 +3,7 @@ import pymongo
 import time
 
 # Parsing of MovieLens Genome tags.dat file.
-# db name: movieLens
+# db name: movieRecommend
 # collection name: tag
 # Adds fields to collection:
 #       -tag id             (tid)

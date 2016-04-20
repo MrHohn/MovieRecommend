@@ -4,7 +4,7 @@ import time
 import csv
 
 # Parsing of MovieLens Genome tag_relevance.dat file.
-# db name: movieLens
+# db name: movieRecommend
 # collection name: tag
 # Adds fields to collection:
 #       -"movies id,relevant_score"  (relevant_movie)

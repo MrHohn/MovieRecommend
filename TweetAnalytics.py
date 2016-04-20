@@ -15,11 +15,12 @@ class TextAnalytics(object):
 
     @classmethod
     def __init__(self):
-        mongo = DataService.Mongo("anew")
-        anewDoc = mongo.db["list"].find_one({"type": "all"})
+        mongo = DataService.Mongo("movieRecommend")
+        anewDoc = mongo.db["anew"].find_one({"type": "all"})
         self.anewDict = anewDoc["dict"]
         print("[Sentiment] ANEW list retrieved.")
-        self.textapi = textapi.Client("YOUR_APP_ID", "YOUR_APP_KEY")
+        # Aylien App: MovieRecommend_1
+        self.textapi = textapi.Client("05fa5320", "5fcddee851a03449a673ad3fa6df38ca")
         print("[Aylien] Aylien client initialized.")
 
     @classmethod
@@ -76,8 +77,6 @@ class TextAnalytics(object):
             # print(tweet.encode("utf8"))
 
         classification = self.textapi.Classify({"text": user_tweets})
-        # classify_file = open('debug.txt', 'a')
-        # classify_file.write(str(str(classify).encode("utf8")))
         return classification
 
 

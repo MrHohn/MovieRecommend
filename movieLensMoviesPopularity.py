@@ -3,7 +3,7 @@ import pymongo
 import time
 
 # Parsing of MovieLens Genome movies.dat file.
-# db name: movieLens
+# db name: movieRecommend
 # collection name: movie
 # Adds fields to collection:
 #       -movie popularity     (popular)

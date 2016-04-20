@@ -1,54 +1,55 @@
-import DataService
+from DataService import Mongo
 import pymongo
 import time
 import math
 import queue
 from TwitterService import Tweepy
-from aylienapiclient import textapi
 from TweetAnalytics import TextAnalytics
 
 # Recommender based on MovieLens database
 # db name: movieLens
 
-class MovieLensRecommend(object):
+class MovieRecommend(object):
 
     @classmethod
     def __init__(self):
-        self.mongo = DataService.Mongo("movieLens")
-        self.mongoTwitter = DataService.Mongo("movieRecommend")
+        self.mongo = Mongo("movieRecommend")
 
     # unfinished
     @classmethod
     def recommend_movies_for_twitter(self, screen_name):
-        print("[MovieLensRecommend] Target user screen_name: " + screen_name)
+        print("[MovieRecommend] Target user screen_name: " + screen_name)
 
-        profile = self.mongoTwitter.db["user_profiles"].find_one({"screen_name": screen_name})
+        profile = self.mongo.db["user_profiles"].find_one({"screen_name": screen_name})
         if profile is None:
-            print("[MovieLensRecommend] Not found in database.")
+            print("[MovieRecommend] Not found in database.")
             twitter = Tweepy()
             profile = twitter.extract_profile(screen_name)
 
-        print("[MovieLensRecommend] Profile retrieved.")
+        print("[MovieRecommend] Profile retrieved.")
         textAnalytics = TextAnalytics()
         classification = textAnalytics.classify(profile)
-        print("[MovieLensRecommend] Classified: " + str(classification["categories"]))
+        print("[MovieRecommend] Classified: " + str(classification["categories"]))
+        # classify_file = open('debug.txt', 'a')
+        # classify_file.write(str(str(classification).encode("utf8")))
+
         # TODO
 
     # generate up to 10 movies recommendations given a movie id
     # the core idea is cosine similarity between tags list
     @classmethod
     def recommend_movies_for_movie(self, mid):
-        print("[MovieLensRecommend] Target movie id: " + str(mid))
+        print("[MovieRecommend] Target movie id: " + str(mid))
         target_movie = self.mongo.db["movie"].find_one({"mid": mid})
         if "similar_movies" in target_movie:
-            print("[MovieLensRecommend] Similar movies calculated.")
+            print("[MovieRecommend] Similar movies calculated.")
             most_similar_movies = target_movie["similar_movies"]
         else:
-            print("[MovieLensRecommend] Similar movies not calculated.")
+            print("[MovieRecommend] Similar movies not calculated.")
             if "tags" not in target_movie:
-                print("[MovieLensRecommend] No tagging info found, unable to recommend.")
+                print("[MovieRecommend] No tagging info found, unable to recommend.")
                 return
-            print("[MovieLensRecommend] Tagging info found, now start calculating...")
+            print("[MovieRecommend] Tagging info found, now start calculating...")
             target_mid = mid
             target_tags_score = target_movie["tags"]
             target_tags = set()
@@ -68,7 +69,7 @@ class MovieLensRecommend(object):
             for cur_movie in cursor:
                 count += 1
                 if count % progressInterval == 0:
-                    print("[MovieLensRecommend] %6d movies processed so far. (%d%%) (%0.2fs)" % ((count, int(count * 100 / progressTotal), time.time() - startTime)))
+                    print("[MovieRecommend] %6d movies processed so far. (%d%%) (%0.2fs)" % ((count, int(count * 100 / progressTotal), time.time() - startTime)))
 
                 # skip non-tagged movie
                 if "tags" not in cur_movie:
@@ -95,10 +96,10 @@ class MovieLensRecommend(object):
             while not candidates.empty():
                 cur_movie = candidates.get()
                 most_similar_movies.append(cur_movie.cid)
-                # print("[MovieLensRecommend] uid: " + str(cur_movie.cid) + ", score: " + str(cur_movie.score))
-            print("[MovieLensRecommend] Calculation complete.")
+                # print("[MovieRecommend] uid: " + str(cur_movie.cid) + ", score: " + str(cur_movie.score))
+            print("[MovieRecommend] Calculation complete.")
             self.mongo.db["movie"].update_one({"mid": target_mid}, {"$set": {"similar_movies": most_similar_movies}}, True)
-            print("[MovieLensRecommend] Stored similar movies into DB.")
+            print("[MovieRecommend] Stored similar movies into DB.")
 
         self.print_recommend(most_similar_movies)
         return most_similar_movies
@@ -107,7 +108,7 @@ class MovieLensRecommend(object):
     # the core idea is tf.idf weight (content-based query)
     @classmethod
     def recommend_movies_based_on_tags(self, tags):
-        print("[MovieLensRecommend] Target tags: " + str(tags))
+        print("[MovieRecommend] Target tags: " + str(tags))
         total_movies_num = 9734
         movies_score = {}
         for tid in tags:
@@ -147,34 +148,34 @@ class MovieLensRecommend(object):
         while not candidates_pool.empty():
             cur_candidate = candidates_pool.get()
             top_k.append(cur_candidate.cid)
-            # print("[MovieLensRecommend] Candidate id: " + str(cur_candidate.cid) + ", score: " + str(cur_candidate.score))
+            # print("[MovieRecommend] Candidate id: " + str(cur_candidate.cid) + ", score: " + str(cur_candidate.score))
         top_k.reverse()
         return top_k
 
-    # given a list of recommendations, print out the movies information
+    # given a list of recommendation movie ids, print out the movies information
     @classmethod
     def print_recommend(self, recommend):
-        print("[MovieLensRecommend] - Recommend movies: -")
+        print("[MovieRecommend] - Recommend movies: -")
         for movie_id in recommend:
             movie_data = self.mongo.db["movie"].find_one({"mid": movie_id})
-            print("[MovieLensRecommend] imdbid: %7d, %s" % (movie_data["imdbid"],movie_data["title"]))
-        print("[MovieLensRecommend] - Recommend complete. -")
+            print("[MovieRecommend] imdbid: %7d, %s" % (movie_data["imdbid"],movie_data["title"]))
+        print("[MovieRecommend] - Recommend complete. -")
 
     # generate up to 20 movies recommendations given an User ID
     # the core idea is collaborative filtering (comparing movie occurrences)
     @classmethod
     def recommend_movies_for_user(self, userID):
         target_user = self.mongo.db["user_rate"].find_one({"uid": userID})
-        print("[MovieLensRecommend] Target user ID: [" + str(userID) + "]")
+        print("[MovieRecommend] Target user ID: [" + str(userID) + "]")
         # check if similar users were calculated
         if "similar_users" in target_user:
-            print("[MovieLensRecommend] Similar users calculated.")
+            print("[MovieRecommend] Similar users calculated.")
             most_similar_users = target_user["similar_users"]
         else:
-            print("[MovieLensRecommend] Similar users not calculated.")
+            print("[MovieRecommend] Similar users not calculated.")
             most_similar_users = self.get_similar_users(userID)
-        print("[MovieLensRecommend] Similar users retrieved.")
-        print("[MovieLensRecommend] Start generating recommend movies...")
+        print("[MovieRecommend] Similar users retrieved.")
+        print("[MovieRecommend] Start generating recommend movies...")
         # gain target user history
         target_history = set()
         for rating in target_user["ratings"]:
@@ -203,7 +204,7 @@ class MovieLensRecommend(object):
     # the core idea is cosine similarity between user like list
     @classmethod
     def get_similar_users(self, userID):
-        print("[MovieLensRecommend] Start calculating similar users...")
+        print("[MovieRecommend] Start calculating similar users...")
         target_user = self.mongo.db["user_rate"].find_one({"uid": userID})
         target_id = userID
         target_like = set()
@@ -211,9 +212,9 @@ class MovieLensRecommend(object):
             if rating[1] >= 3.5:
                 target_like.add(rating[0])
         if len(target_like) < 5:
-            print("[MovieLensRecommend] Not enough rating history: " + str(len(target_like)) + ".")
+            print("[MovieRecommend] Not enough rating history: " + str(len(target_like)) + ".")
             return
-        print("[MovieLensRecommend] Sufficient history: " + str(len(target_like))+ ", now start calculating...")
+        print("[MovieRecommend] Sufficient history: " + str(len(target_like))+ ", now start calculating...")
 
         progressInterval = 10000  # How often should we print a progress report to the console?
         progressTotal = 247753    # Approximate number of total users
@@ -227,7 +228,7 @@ class MovieLensRecommend(object):
         for cur_user in cursor:
             count += 1
             if count % progressInterval == 0:
-                print("[MovieLensRecommend] %6d lines processed so far. (%d%%) (%0.2fs)" % ((count, int(count * 100 / progressTotal), time.time() - startTime)))
+                print("[MovieRecommend] %6d lines processed so far. (%d%%) (%0.2fs)" % ((count, int(count * 100 / progressTotal), time.time() - startTime)))
 
             cur_id = cur_user["uid"]
             if cur_id == target_id:
@@ -250,10 +251,10 @@ class MovieLensRecommend(object):
         while not candidates.empty():
             cur_user = candidates.get()
             most_similar_users.append(cur_user.cid)
-            # print("[MovieLensRecommend] uid: " + str(cur_user.cid) + ", score: " + str(cur_user.score))
-        print("[MovieLensRecommend] Calculation complete (%0.2fs)" % (time.time() - startTime))
+            # print("[MovieRecommend] uid: " + str(cur_user.cid) + ", score: " + str(cur_user.score))
+        print("[MovieRecommend] Calculation complete (%0.2fs)" % (time.time() - startTime))
         self.mongo.db["user_rate"].update_one({"uid": target_id}, {"$set": {"similar_users": most_similar_users}}, True)
-        print("[MovieLensRecommend] Stored similar users into DB.")
+        print("[MovieRecommend] Stored similar users into DB.")
         return most_similar_users
 
     @classmethod
@@ -280,29 +281,29 @@ class Candidate(object):
 
 
 def main():
-    recommend = MovieLensRecommend()
+    recommend = MovieRecommend()
 
-    # # unit test, input: User ID = 4
-    # print("[MovieLensRecommend] ***** Unit test for recommend_movies_for_user() *****")
-    # user_id = 4
-    # recommend.recommend_movies_for_user(user_id)
+    # unit test, input: User ID = 4
+    print("[MovieRecommend] ***** Unit test for recommend_movies_for_user() *****")
+    user_id = 4
+    recommend.recommend_movies_for_user(user_id)
 
-    # # unit test, input:
-    # # 28:  adventure
-    # # 387: feel-good
-    # # 599: life
-    # # 704: new york city
-    # # 794: police
-    # print("[MovieLensRecommend] ***** Unit test for recommend_movies_based_on_tags() *****")
-    # tags = [28, 387, 599, 704, 794]
-    # recommend.recommend_movies_based_on_tags(tags)
+    # unit test, input:
+    # 28:  adventure
+    # 387: feel-good
+    # 599: life
+    # 704: new york city
+    # 794: police
+    print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_tags() *****")
+    tags = [28, 387, 599, 704, 794]
+    recommend.recommend_movies_based_on_tags(tags)
 
-    # # unit test, input: Movie ID = 1 "Toy Story (1995)"
-    # print("[MovieLensRecommend] ***** Unit test for recommend_movies_for_movie() *****")
-    # movie_id = 1
-    # recommend.recommend_movies_for_movie(movie_id)
+    # unit test, input: Movie ID = 1 "Toy Story (1995)"
+    print("[MovieRecommend] ***** Unit test for recommend_movies_for_movie() *****")
+    movie_id = 1
+    recommend.recommend_movies_for_movie(movie_id)
 
-    recommend.recommend_movies_for_twitter("BrunoMars")
+    # recommend.recommend_movies_for_twitter("BrunoMars")
 
 if __name__ == "__main__":
     main()

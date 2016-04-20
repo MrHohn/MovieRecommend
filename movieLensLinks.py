@@ -3,7 +3,7 @@ import pymongo
 import time
 
 # Parsing of MovieLens links.csv file.
-# db name: movieLens
+# db name: movieRecommend
 # collection name: movie
 # Adds fields to collection:
 #       -movie id           (mid)

@@ -4,7 +4,7 @@ import time
 import csv
 
 # Parsing of MovieLens movies.csv file.
-# db name: movieLens
+# db name: movieRecommend
 # collection name: movie
 # Adds fields to collection:
 #       -movie id           (mid)
