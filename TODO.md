@@ -5,3 +5,4 @@
 - Pre-compute recommendations for all movielens movies (using tags or genres popularity or cosine similarity) and store result into database. Use movielens movie to narrow down the workload.
 - Typeahead for tags and movies (for user searching) or use tags list and movie list --- for user adding preferences (user interaction)
 - User interface building
+- Gain relationship between Twitter profile and user preferences. Make recommendation based on preferences.

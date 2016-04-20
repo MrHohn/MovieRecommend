@@ -19,8 +19,7 @@ class TextAnalytics(object):
         anewDoc = mongo.db["anew"].find_one({"type": "all"})
         self.anewDict = anewDoc["dict"]
         print("[Sentiment] ANEW list retrieved.")
-        # Aylien App: MovieRecommend_1
-        self.textapi = textapi.Client("05fa5320", "5fcddee851a03449a673ad3fa6df38ca")
+        self.textapi = textapi.Client("YOUR_APP_ID", "YOUR_APP_KEY")
         print("[Aylien] Aylien client initialized.")
 
     @classmethod

@@ -33,6 +33,7 @@ class MovieRecommend(object):
         # classify_file = open('debug.txt', 'a')
         # classify_file.write(str(str(classification).encode("utf8")))
         print("TODO")
+        return []
 
     # generate up to 10 movies recommendations given a movie id
     # directly using recommend_movies_based_on_tags()
@@ -47,7 +48,7 @@ class MovieRecommend(object):
             print("[MovieRecommend] Similar movies not calculated.")
             if "tags" not in target_movie:
                 print("[MovieRecommend] No tagging info found, unable to recommend.")
-                return
+                return []
             print("[MovieRecommend] Tagging info found, now start calculating...")
             target_mid = mid
             target_tags_score = target_movie["tags"]
@@ -78,7 +79,7 @@ class MovieRecommend(object):
             print("[MovieRecommend] Similar movies not calculated.")
             if "tags" not in target_movie:
                 print("[MovieRecommend] No tagging info found, unable to recommend.")
-                return
+                return []
             print("[MovieRecommend] Tagging info found, now start calculating...")
             target_mid = mid
             target_tags_score = target_movie["tags"]
@@ -187,6 +188,8 @@ class MovieRecommend(object):
     # given a list of recommendation movie ids, print out the movies information
     @classmethod
     def print_recommend(self, recommend):
+        if len(recommend) == 0:
+            return
         print("[MovieRecommend] - Recommend movies: -")
         for movie_id in recommend:
             movie_data = self.mongo.db["movie"].find_one({"mid": movie_id})
@@ -197,8 +200,11 @@ class MovieRecommend(object):
     # the core idea is collaborative filtering (comparing movie occurrences)
     @classmethod
     def recommend_movies_for_user(self, userID):
-        target_user = self.mongo.db["user_rate"].find_one({"uid": userID})
         print("[MovieRecommend] Target user ID: [" + str(userID) + "]")
+        target_user = self.mongo.db["user_rate"].find_one({"uid": userID})
+        if target_user is None:
+            print("[MovieRecommend] Target user ID not exist.")
+            return []
         # check if similar users were calculated
         if "similar_users" in target_user:
             print("[MovieRecommend] Similar users calculated.")
@@ -233,19 +239,31 @@ class MovieRecommend(object):
         return recommend
 
     # return top-10 similar users given an User ID
-    # the core idea is cosine similarity between user like list
+    # directly using get_similar_users_by_history()
     @classmethod
     def get_similar_users(self, userID):
-        print("[MovieRecommend] Start calculating similar users...")
+        print("[MovieRecommend] Start retrieving similar users...")
         target_user = self.mongo.db["user_rate"].find_one({"uid": userID})
         target_id = userID
         target_like = set()
         for rating in target_user["ratings"]:
             if rating[1] >= 3.5:
                 target_like.add(rating[0])
-        if len(target_like) < 5:
+
+        most_similar_users = self.get_similar_users_by_history(target_like, target_id)
+        if len(most_similar_users) > 0:
+            self.mongo.db["user_rate"].update_one({"uid": target_id}, {"$set": {"similar_users": most_similar_users}}, True)
+            print("[MovieRecommend] Stored similar users into DB.")
+        return most_similar_users
+
+    # return top-10 similar users given user history
+    # the core idea is cosine similarity between user like list
+    @classmethod
+    def get_similar_users_by_history(self, target_like, target_id=0):
+        print("[MovieRecommend] Start calculating similar users...")
+        if len(target_like) < 3:
             print("[MovieRecommend] Not enough rating history: " + str(len(target_like)) + ".")
-            return
+            return []
         print("[MovieRecommend] Sufficient history: " + str(len(target_like))+ ", now start calculating...")
 
         progressInterval = 10000  # How often should we print a progress report to the console?
@@ -285,8 +303,7 @@ class MovieRecommend(object):
             most_similar_users.append(cur_user.cid)
             # print("[MovieRecommend] uid: " + str(cur_user.cid) + ", score: " + str(cur_user.score))
         print("[MovieRecommend] Calculation complete (%0.2fs)" % (time.time() - startTime))
-        self.mongo.db["user_rate"].update_one({"uid": target_id}, {"$set": {"similar_users": most_similar_users}}, True)
-        print("[MovieRecommend] Stored similar users into DB.")
+        most_similar_users.reverse()
         return most_similar_users
 
     @classmethod
