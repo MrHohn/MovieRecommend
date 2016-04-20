@@ -1,8 +1,8 @@
-from DataService import Mongo
-import pymongo
 import time
 import math
 import queue
+import pymongo
+from DataService import Mongo
 from TwitterService import Tweepy
 from TweetAnalytics import TextAnalytics
 
@@ -32,13 +32,43 @@ class MovieRecommend(object):
         print("[MovieRecommend] Classified: " + str(classification["categories"]))
         # classify_file = open('debug.txt', 'a')
         # classify_file.write(str(str(classification).encode("utf8")))
+        print("TODO")
 
-        # TODO
+    # generate up to 10 movies recommendations given a movie id
+    # directly using recommend_movies_based_on_tags()
+    @classmethod
+    def recommend_movies_for_movie(self, mid):
+        print("[MovieRecommend] Target movie id: " + str(mid))
+        target_movie = self.mongo.db["movie"].find_one({"mid": mid})
+        if "similar_movies" in target_movie:
+            print("[MovieRecommend] Similar movies calculated.")
+            most_similar_movies = target_movie["similar_movies"]
+        else:
+            print("[MovieRecommend] Similar movies not calculated.")
+            if "tags" not in target_movie:
+                print("[MovieRecommend] No tagging info found, unable to recommend.")
+                return
+            print("[MovieRecommend] Tagging info found, now start calculating...")
+            target_mid = mid
+            target_tags_score = target_movie["tags"]
+            target_tags = set()
+            for tag_score in target_tags_score:
+                attrs = tag_score.split(",")
+                target_tags.add(int(attrs[0]))
+
+            most_similar_movies = self.recommend_movies_based_on_tags(target_tags, target_mid)
+            print("[MovieRecommend] Calculation complete.")
+            self.mongo.db["movie"].update_one({"mid": target_mid}, {"$set": {"similar_movies": most_similar_movies}}, True)
+            print("[MovieRecommend] Stored similar movies into DB.")
+
+        # self.print_recommend(most_similar_movies)
+        return most_similar_movies
 
     # generate up to 10 movies recommendations given a movie id
     # the core idea is cosine similarity between tags list
+    # however it is slow, hence we got another tag-based recommend algorithm
     @classmethod
-    def recommend_movies_for_movie(self, mid):
+    def recommend_movies_for_movie_cs(self, mid):
         print("[MovieRecommend] Target movie id: " + str(mid))
         target_movie = self.mongo.db["movie"].find_one({"mid": mid})
         if "similar_movies" in target_movie:
@@ -101,13 +131,13 @@ class MovieRecommend(object):
             self.mongo.db["movie"].update_one({"mid": target_mid}, {"$set": {"similar_movies": most_similar_movies}}, True)
             print("[MovieRecommend] Stored similar movies into DB.")
 
-        self.print_recommend(most_similar_movies)
+        # self.print_recommend(most_similar_movies)
         return most_similar_movies
 
     # generate up to 20 movies recommendations given a list of tags
     # the core idea is tf.idf weight (content-based query)
     @classmethod
-    def recommend_movies_based_on_tags(self, tags):
+    def recommend_movies_based_on_tags(self, tags, target_mid=0):
         print("[MovieRecommend] Target tags: " + str(tags))
         total_movies_num = 9734
         movies_score = {}
@@ -118,6 +148,8 @@ class MovieRecommend(object):
             for relevance_pair in cur_movies:
                 attrs = relevance_pair.split(",")
                 mid = int(attrs[0])
+                if target_mid == mid:
+                    continue
                 relevance = float(attrs[1])
                 score = self.weight_tf_idf(relevance, cur_popular, total_movies_num)
                 if mid not in movies_score:
@@ -127,7 +159,7 @@ class MovieRecommend(object):
 
         # put all candidates to compete, gain top-k
         recommend = self.gain_top_k(movies_score, 20)
-        self.print_recommend(recommend)
+        # self.print_recommend(recommend)
         return recommend
 
     @classmethod
@@ -159,7 +191,7 @@ class MovieRecommend(object):
         for movie_id in recommend:
             movie_data = self.mongo.db["movie"].find_one({"mid": movie_id})
             print("[MovieRecommend] imdbid: %7d, %s" % (movie_data["imdbid"],movie_data["title"]))
-        print("[MovieRecommend] - Recommend complete. -")
+        print("[MovieRecommend] - Recommend end. -")
 
     # generate up to 20 movies recommendations given an User ID
     # the core idea is collaborative filtering (comparing movie occurrences)
@@ -197,7 +229,7 @@ class MovieRecommend(object):
 
         # put all occurrences in to heap to gain top-k
         recommend = self.gain_top_k(movies_count, 20)
-        self.print_recommend(recommend)
+        # self.print_recommend(recommend)
         return recommend
 
     # return top-10 similar users given an User ID
@@ -286,7 +318,8 @@ def main():
     # unit test, input: User ID = 4
     print("[MovieRecommend] ***** Unit test for recommend_movies_for_user() *****")
     user_id = 4
-    recommend.recommend_movies_for_user(user_id)
+    most_similar_movies = recommend.recommend_movies_for_user(user_id)
+    recommend.print_recommend(most_similar_movies)
 
     # unit test, input:
     # 28:  adventure
@@ -296,12 +329,20 @@ def main():
     # 794: police
     print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_tags() *****")
     tags = [28, 387, 599, 704, 794]
-    recommend.recommend_movies_based_on_tags(tags)
+    most_similar_movies = recommend.recommend_movies_based_on_tags(tags)
+    recommend.print_recommend(most_similar_movies)
+
+    # # unit test, input: Movie ID = 1 "Toy Story (1995)"
+    # print("[MovieRecommend] ***** Unit test for recommend_movies_for_movie_cs() *****")
+    # movie_id = 1
+    # most_similar_movies = recommend.recommend_movies_for_movie_cs(movie_id)
+    # recommend.print_recommend(most_similar_movies)
 
     # unit test, input: Movie ID = 1 "Toy Story (1995)"
     print("[MovieRecommend] ***** Unit test for recommend_movies_for_movie() *****")
     movie_id = 1
-    recommend.recommend_movies_for_movie(movie_id)
+    most_similar_movies = recommend.recommend_movies_for_movie(movie_id)
+    recommend.print_recommend(most_similar_movies)
 
     # recommend.recommend_movies_for_twitter("BrunoMars")
 

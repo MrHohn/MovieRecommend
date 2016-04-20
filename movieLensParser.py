@@ -24,6 +24,8 @@ def parseMovieLens():
     movieLensLinks.parse(mongo)
     mongo.db["movie"].create_index([("mid", pymongo.ASCENDING)])
     print("[movieLensParser] Created index for mid in movie")
+    mongo.db["movie"].create_index([("title", pymongo.ASCENDING)])
+    print("[movieLensParser] Created title for mid in movie")
 
     # Add movie titles into database.
     # runtime: (3.15s)
@@ -34,6 +36,8 @@ def parseMovieLens():
     movieLensTags.parse(mongo)
     mongo.db["tag"].create_index([("tid", pymongo.ASCENDING)])
     print("[movieLensParser] Created index for tid in tag")
+    mongo.db["tag"].create_index([("content", pymongo.ASCENDING)])
+    print("[movieLensParser] Created index for content in tag")
 
     # Add movies popularity into database.
     # runtime: (0.83s)
