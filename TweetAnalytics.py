@@ -4,13 +4,14 @@ import time
 import re
 import math
 from textblob import TextBlob
+from aylienapiclient import textapi
 
 # Sentiment degree calculation is referring Visualizing Twitter Sentiment from NCSU
 # https://www.csc.ncsu.edu/faculty/healey/tweet_viz/
+# TextBlob reference: https://textblob.readthedocs.org/en/dev/index.html
+# AYLIEN Text Analysis API: http://aylien.com/
 
-# Text Processing reference: https://textblob.readthedocs.org/en/dev/index.html
-
-class Sentiment(object):
+class TextAnalytics(object):
 
     @classmethod
     def __init__(self):
@@ -18,10 +19,12 @@ class Sentiment(object):
         anewDoc = mongo.db["list"].find_one({"type": "all"})
         self.anewDict = anewDoc["dict"]
         print("[Sentiment] ANEW list retrieved.")
+        self.textapi = textapi.Client("YOUR_APP_ID", "YOUR_APP_KEY")
+        print("[Aylien] Aylien client initialized.")
 
     @classmethod
     def gain_sentiment(self, sentence):
-        words = tokenize(sentence)
+        words = self.tokenize(sentence)
         if len(words) < 2:
             return 0
         valence_list = []
@@ -45,31 +48,46 @@ class Sentiment(object):
     def probability_density(self, sd):
         return 1 / (sd * math.sqrt(2 * math.pi))
 
-# unfinished
-def tokenize(sentence):
-    # words = re.split("\s|\.|;|,|\*|\n|!|'|\"", sentence)
-    text = TextBlob(sentence)
-    words = text.words
-    res = []
-    for word in words:
-        if len(word) > 0:
-            res.append(stemming(word))
-    # print(res)
-    return res
+    # unfinished
+    @classmethod
+    def tokenize(self, sentence):
+        # words = re.split("\s|\.|;|,|\*|\n|!|'|\"", sentence)
+        text = TextBlob(sentence)
+        words = text.words
+        res = []
+        for word in words:
+            if len(word) > 0:
+                res.append(self.stemming(word))
+        # print(res)
+        return res
 
-# unfinished
-# handle empty or invalid word, and stem word
-def stemming(word):
-    return word.lower()
+    # unfinished
+    # handle empty or invalid word, and stem word
+    @classmethod
+    def stemming(self, word):
+        return word.lower()
+
+    @classmethod
+    def classify(self, profile):
+        print("[Twitter] Getting classification from user profile...")
+        user_tweets = ""
+        for tweet in profile["extracted_tweets"]:
+            user_tweets += "\n" + tweet
+            # print(tweet.encode("utf8"))
+
+        classification = self.textapi.Classify({"text": user_tweets})
+        # classify_file = open('debug.txt', 'a')
+        # classify_file.write(str(str(classify).encode("utf8")))
+        return classification
 
 
 def main():
-    sentiment = Sentiment()
+    textAnalytics = TextAnalytics()
     # sentence = "Congrats to @HCP_Nevada on their health care headliner win"
     # sentence = "b'I love you @iHeartRadio! I love you hooligans! love you Sriracha. I love you @LeoDiCaprio. Thinking of u @holyfield  https://t.co/iPoHf03G4R'"
     sentence = "The secret life of Walter Mitty is a fantastic movie"
     print("[TweetAnalytics] Evaluating sentence: " + sentence)
-    score = sentiment.gain_sentiment(sentence)
+    score = textAnalytics.gain_sentiment(sentence)
     print("[TweetAnalytics] Sentiment score: " + str(score))
 
 if __name__ == "__main__":

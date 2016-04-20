@@ -3,6 +3,9 @@ import pymongo
 import time
 import math
 import queue
+from TwitterService import Tweepy
+from aylienapiclient import textapi
+from TweetAnalytics import TextAnalytics
 
 # Recommender based on MovieLens database
 # db name: movieLens
@@ -12,6 +15,24 @@ class MovieLensRecommend(object):
     @classmethod
     def __init__(self):
         self.mongo = DataService.Mongo("movieLens")
+        self.mongoTwitter = DataService.Mongo("movieRecommend")
+
+    # unfinished
+    @classmethod
+    def recommend_movies_for_twitter(self, screen_name):
+        print("[MovieLensRecommend] Target user screen_name: " + screen_name)
+
+        profile = self.mongoTwitter.db["user_profiles"].find_one({"screen_name": screen_name})
+        if profile is None:
+            print("[MovieLensRecommend] Not found in database.")
+            twitter = Tweepy()
+            profile = twitter.extract_profile(screen_name)
+
+        print("[MovieLensRecommend] Profile retrieved.")
+        textAnalytics = TextAnalytics()
+        classification = textAnalytics.classify(profile)
+        print("[MovieLensRecommend] Classified: " + str(classification["categories"]))
+        # TODO
 
     # generate up to 10 movies recommendations given a movie id
     # the core idea is cosine similarity between tags list
@@ -260,25 +281,28 @@ class Candidate(object):
 
 def main():
     recommend = MovieLensRecommend()
-    # unit test, input: User ID = 4
-    print("[MovieLensRecommend] ***** Unit test for recommend_movies_for_user() *****")
-    user_id = 4
-    recommend.recommend_movies_for_user(user_id)
 
-    # unit test, input:
-    # 28:  adventure
-    # 387: feel-good
-    # 599: life
-    # 704: new york city
-    # 794: police
-    print("[MovieLensRecommend] ***** Unit test for recommend_movies_based_on_tags() *****")
-    tags = [28, 387, 599, 704, 794]
-    recommend.recommend_movies_based_on_tags(tags)
+    # # unit test, input: User ID = 4
+    # print("[MovieLensRecommend] ***** Unit test for recommend_movies_for_user() *****")
+    # user_id = 4
+    # recommend.recommend_movies_for_user(user_id)
 
-    # unit test, input: Movie ID = 1 "Toy Story (1995)"
-    print("[MovieLensRecommend] ***** Unit test for recommend_movies_for_movie() *****")
-    movie_id = 1
-    recommend.recommend_movies_for_movie(movie_id)
+    # # unit test, input:
+    # # 28:  adventure
+    # # 387: feel-good
+    # # 599: life
+    # # 704: new york city
+    # # 794: police
+    # print("[MovieLensRecommend] ***** Unit test for recommend_movies_based_on_tags() *****")
+    # tags = [28, 387, 599, 704, 794]
+    # recommend.recommend_movies_based_on_tags(tags)
+
+    # # unit test, input: Movie ID = 1 "Toy Story (1995)"
+    # print("[MovieLensRecommend] ***** Unit test for recommend_movies_for_movie() *****")
+    # movie_id = 1
+    # recommend.recommend_movies_for_movie(movie_id)
+
+    recommend.recommend_movies_for_twitter("BrunoMars")
 
 if __name__ == "__main__":
     main()
