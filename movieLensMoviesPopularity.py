@@ -56,7 +56,7 @@ def parse(mongo):
 
 
 def main():
-    mongo = DataService.Mongo("movieLens")
+    mongo = Mongo("movieRecommend")
     parse(mongo)
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ import movieLensMovies
 import movieLensTags
 import movieLensMoviesPopularity
 import movieLensRelevance
+import movieLensGenres
 import time
 
 def parseMovieLens():
@@ -31,6 +32,10 @@ def parseMovieLens():
     # runtime: (3.15s)
     movieLensMovies.parse(mongo)
 
+    # Add movie genres into database.
+    # runtime: (4.11s)
+    movieLensGenres.parse(mongo)
+    
     # Add tags into database.
     # runtime: (0.06s)
     movieLensTags.parse(mongo)
