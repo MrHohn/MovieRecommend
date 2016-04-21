@@ -20,3 +20,6 @@ dump
 # MovieLens Datasets
 *.csv
 *.dat
+
+# app files
+img

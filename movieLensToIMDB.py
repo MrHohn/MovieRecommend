@@ -61,7 +61,7 @@ def retrieve(mongo):
         for actor in imdb_movie["actors"].split(","):
             cur_actors.append(actor.strip())
 
-        bulkPayload.find( {"mid": cur_mid} ).update({"$set": {
+        bulkPayload.find({"mid": cur_mid}).update({"$set": {
             "year": imdb_movie["year"], 
             "country": imdb_movie["country"], 
             "language": imdb_movie["language"], 

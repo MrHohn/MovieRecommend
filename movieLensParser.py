@@ -10,9 +10,9 @@ import movieLensRelevance
 import movieLensGenres
 import movieLensToIMDB
 
-def parseMovieLens():
-    mongo = Mongo("movieRecommend")
+def parse(mongo):
 
+    print("[prepareDB] Starting parse MovieLens database...")
     startTime = time.time()
 
     # Add all user ratings into database.
@@ -54,14 +54,15 @@ def parseMovieLens():
     movieLensRelevance.parse(mongo)
 
     # Add more movie info into database.
-    # runtime: (more than half hour)
+    # runtime: (roughly one hour)
     movieLensToIMDB.retrieve(mongo)
     
     print("[movieLensParser] Parse done (%0.2fs)." % (time.time() - startTime))
 
 
 def main():
-    parseMovieLens()
+    mongo = Mongo("movieRecommend")
+    parse(mongo)
 
 if __name__ == "__main__":
     main()

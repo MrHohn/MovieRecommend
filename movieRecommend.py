@@ -6,8 +6,8 @@ from DataService import Mongo
 from TwitterService import Tweepy
 from TweetAnalytics import TextAnalytics
 
-# Recommender based on MovieLens database
-# db name: movieLens
+# Recommender based on MovieLens/Genome database and Twitter profile
+# db name: movieRecommend
 
 class MovieRecommend(object):
 
@@ -22,7 +22,7 @@ class MovieRecommend(object):
 
         profile = self.mongo.db["user_profiles"].find_one({"screen_name": screen_name})
         if profile is None:
-            print("[MovieRecommend] Not found in database.")
+            print("[MovieRecommend] Profile not found in database.")
             twitter = Tweepy()
             profile = twitter.extract_profile(screen_name)
 
@@ -37,6 +37,7 @@ class MovieRecommend(object):
 
     # generate up to 10 movies recommendations given a movie id
     # directly using recommend_movies_based_on_tags()
+    #               and recommend_movies_based_on_genres()
     @classmethod
     def recommend_movies_for_movie(self, mid):
         print("[MovieRecommend] Target movie id: " + str(mid))
@@ -47,17 +48,19 @@ class MovieRecommend(object):
         else:
             print("[MovieRecommend] Similar movies not calculated.")
             if "tags" not in target_movie:
-                print("[MovieRecommend] No tagging info found, unable to recommend.")
-                return []
-            print("[MovieRecommend] Tagging info found, now start calculating...")
-            target_mid = mid
-            target_tags_score = target_movie["tags"]
-            target_tags = set()
-            for tag_score in target_tags_score:
-                attrs = tag_score.split(",")
-                target_tags.add(int(attrs[0]))
+                print("[MovieRecommend] No tagging info found, use genres-based recommendation.")
+                target_genres = target_movie["genres"]
+                most_similar_movies = self.recommend_movies_based_on_genres(target_genres, target_mid)
+            else:
+                print("[MovieRecommend] Tagging info found, now start calculating...")
+                target_mid = mid
+                target_tags_score = target_movie["tags"]
+                target_tags = set()
+                for tag_score in target_tags_score:
+                    attrs = tag_score.split(",")
+                    target_tags.add(int(attrs[0]))
+                most_similar_movies = self.recommend_movies_based_on_tags(target_tags, target_mid)
 
-            most_similar_movies = self.recommend_movies_based_on_tags(target_tags, target_mid)
             print("[MovieRecommend] Calculation complete.")
             self.mongo.db["movie"].update_one({"mid": target_mid}, {"$set": {"similar_movies": most_similar_movies}}, True)
             print("[MovieRecommend] Stored similar movies into DB.")
@@ -153,6 +156,31 @@ class MovieRecommend(object):
                     continue
                 relevance = float(attrs[1])
                 score = self.weight_tf_idf(relevance, cur_popular, total_movies_num)
+                if mid not in movies_score:
+                    movies_score[mid] = score
+                else:
+                    movies_score[mid] += score
+
+        # put all candidates to compete, gain top-k
+        recommend = self.gain_top_k(movies_score, 20)
+        # self.print_recommend(recommend)
+        return recommend
+
+    # generate up to 20 movies recommendations given a list of genres
+    # the core idea is tf.idf weight (content-based query)
+    @classmethod
+    def recommend_movies_based_on_genres(self, genres, target_mid=0):
+        print("[MovieRecommend] Target genres: " + str(genres))
+        total_movies_num = 34208
+        movies_score = {}
+        for genre in genres:
+            cur_genre = self.mongo.db["genres"].find_one({"genre": genre})
+            cur_popular = cur_genre["popular"]
+            cur_movies = cur_genre["relevant_movie"]
+            for mid in cur_movies:
+                if target_mid == mid:
+                    continue
+                score = self.weight_tf_idf(1, cur_popular, total_movies_num)
                 if mid not in movies_score:
                     movies_score[mid] = score
                 else:
