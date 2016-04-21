@@ -3,6 +3,7 @@ import pymongo
 import time
 import re
 import math
+import anewParser
 from textblob import TextBlob
 from aylienapiclient import textapi
 
@@ -17,6 +18,9 @@ class TextAnalytics(object):
     def __init__(self):
         mongo = DataService.Mongo("movieRecommend")
         anewDoc = mongo.db["anew"].find_one({"type": "all"})
+        if anewDoc is None:
+            anewParser.parse(mongo)
+            anewDoc = mongo.db["anew"].find_one({"type": "all"})            
         self.anewDict = anewDoc["dict"]
         print("[Sentiment] ANEW list retrieved.")
         self.textapi = textapi.Client("YOUR_APP_ID", "YOUR_APP_KEY")

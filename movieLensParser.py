@@ -1,5 +1,6 @@
 from DataService import Mongo
 import pymongo
+import time
 import movieLensRatings
 import movieLensLinks
 import movieLensMovies
@@ -7,7 +8,7 @@ import movieLensTags
 import movieLensMoviesPopularity
 import movieLensRelevance
 import movieLensGenres
-import time
+import movieLensToIMDB
 
 def parseMovieLens():
     mongo = Mongo("movieRecommend")
@@ -52,6 +53,10 @@ def parseMovieLens():
     # runtime: (509.09s)
     movieLensRelevance.parse(mongo)
 
+    # Add more movie info into database.
+    # runtime: (aroung half hour)
+    movieLensToIMDB.retrieve(mongo)
+    
     print("[movieLensParser] Parse done (%0.2fs)." % (time.time() - startTime))
 
 
