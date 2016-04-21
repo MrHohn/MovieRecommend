@@ -38,7 +38,7 @@ def retrieve(mongo):
 
     # save all data in dict
     # output the data into MongoDB
-    cursor = mongo.db["movie"].find({})
+    cursor = mongo.db["movie"].find({}, no_cursor_timeout=True)
     for cur_movie in cursor:
         count += 1
         if count % progressInterval == 0:

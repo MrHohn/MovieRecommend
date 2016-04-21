@@ -54,7 +54,7 @@ def parseMovieLens():
     movieLensRelevance.parse(mongo)
 
     # Add more movie info into database.
-    # runtime: (aroung half hour)
+    # runtime: (more than half hour)
     movieLensToIMDB.retrieve(mongo)
     
     print("[movieLensParser] Parse done (%0.2fs)." % (time.time() - startTime))
