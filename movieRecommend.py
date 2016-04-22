@@ -15,7 +15,34 @@ class MovieRecommend(object):
     def __init__(self, mongo):
         self.mongo = mongo
 
-    # unfinished
+    @classmethod
+    def get_actors_from_profile(self, profile):
+        # get all actors from database
+        actors = set()
+        cursor = mongo.db["actors_list"].find({})
+        for cur_actor in cursor:
+            cur_name = cur_actor["actor"]
+            actors.add(cur_name)
+
+        count = 0
+        for user in profile["extracted_users"]:
+            if user[1] in actors:
+                count += 1
+
+        print("count")
+        return []
+
+    @classmethod
+    def get_tags_from_profile(self, profile):
+        print("TODO")
+        return []
+
+    @classmethod
+    def get_classification_from_profile(self, profile):
+        textAnalytics = TextAnalytics()
+        classification = textAnalytics.classify(profile)
+        return classification
+
     @classmethod
     def recommend_movies_for_twitter(self, screen_name):
         print("[MovieRecommend] Target user screen_name: " + screen_name)
@@ -27,11 +54,8 @@ class MovieRecommend(object):
             profile = twitter.extract_profile(screen_name)
 
         print("[MovieRecommend] Profile retrieved.")
-        textAnalytics = TextAnalytics()
-        classification = textAnalytics.classify(profile)
-        print("[MovieRecommend] Classified: " + str(classification["categories"]))
-        # classify_file = open('debug.txt', 'a')
-        # classify_file.write(str(str(classification).encode("utf8")))
+        actors = self.get_actors_from_profile(profile)
+
         print("TODO")
         return []
 
@@ -62,8 +86,9 @@ class MovieRecommend(object):
                 most_similar_movies = self.recommend_movies_based_on_tags(target_tags, target_mid)
 
             print("[MovieRecommend] Calculation complete.")
-            self.mongo.db["movie"].update_one({"mid": target_mid}, {"$set": {"similar_movies": most_similar_movies}}, True)
-            print("[MovieRecommend] Stored similar movies into DB.")
+
+            # self.mongo.db["movie"].update_one({"mid": target_mid}, {"$set": {"similar_movies": most_similar_movies}}, True)
+            # print("[MovieRecommend] Stored similar movies into DB.")
 
         # self.print_recommend(most_similar_movies)
         return most_similar_movies

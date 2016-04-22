@@ -255,14 +255,30 @@ def prepare_recommend_thread(mongo, mid_list, thread_num):
     recommend = MovieRecommend(mongo)
     progressTotal = int(34208 / thread_num) + 1
     count = 0
+    bulkSize = 100             # How many documents should we store in memory before inserting them into the database in bulk?
+    # List of documents that will be given to the database to be inserted to the collection in bulk.
+    bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db["movie"], ordered = False)
+    skipCount = 0
 
     for cur_mid in mid_list:
         count += 1
         print("[prepare_recommend_thread] %5d movies processed so far. (%d%%) (%0.2fs)" % (count, int(count * 100 / progressTotal), time.time() - startTime))
         similar_movies = recommend.recommend_movies_for_movie(cur_mid)
-        mongo.db["movie"].update_one({"mid": cur_mid}, {"$set": {
+        bulkPayload.find({"mid": cur_mid}).update({"$set": {
             "similar_movies": similar_movies
-            }}, True)
+            }})
+
+        if count % bulkSize == 0:
+            try:
+                bulkPayload.execute()
+            except pymongo.errors.OperationFailure as e:
+                skipCount += len(e.details["writeErrors"])
+            bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db["movie"], ordered = False)
+    if count % bulkSize > 0:
+        try:
+            bulkPayload.execute()
+        except pymongo.errors.OperationFailure as e:
+            skipCount += len(e.details["writeErrors"])
 
     print("[prepare_recommend_thread] Done.")
 
@@ -314,13 +330,16 @@ def prepare():
     anewParser.parse(mongo)
 
     # Pre-computation
+    # runtime: (few seconds)
     prepare_genres(mongo)
     prepare_actors(mongo)
 
     # all kinds of ranking
+    # runtime: (few seconds)
     prepare_rankings(mongo)
 
     # recommendations for all movies
+    # runtime: (1~2hours)
     prepare_recommend(mongo)
 
     print("[prepareDB] Done (%0.2fs)." % (time.time() - startTime))
