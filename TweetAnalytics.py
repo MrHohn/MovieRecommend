@@ -72,15 +72,26 @@ class TextAnalytics(object):
         return word.lower()
 
     @classmethod
-    def classify(self, profile):
-        print("[Twitter] Getting classification from user profile...")
+    def concatenate_tweets(self, profile):
         user_tweets = ""
         for tweet in profile["extracted_tweets"]:
             user_tweets += "\n" + tweet
             # print(tweet.encode("utf8"))
+        return user_tweets
 
-        classification = self.textapi.Classify({"text": user_tweets})
+    @classmethod
+    def get_classification(self, profile):
+        print("[Twitter] Getting classification from user profile...")
+
+        classification = self.textapi.Classify({"text": self.concatenate_tweets(profile)})
         return classification
+
+    @classmethod
+    def get_entity(self, profile):
+        print("[Twitter] Getting entity from user profile...")
+
+        entity = self.textapi.Entities({"text": self.concatenate_tweets(profile)})
+        return entity
 
 
 def main():

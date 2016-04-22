@@ -25,14 +25,14 @@ class MovieRecommend(object):
             actors.add(cur_name)
         print("[MovieRecommend] Built up actors pool.")
 
-        res = []
+        mentioned_actors = []
         for user in profile["extracted_users"]:
             if user[1] in actors:
-                res.append(user[1])
+                mentioned_actors.append(user[1])
                 # print(user[1].encode("utf8"))
 
-        print("[MovieRecommend] Found " + str(len(res)) + " actors from profile.")
-        return res
+        print("[MovieRecommend] Found " + str(len(mentioned_actors)) + " actors from profile.")
+        return mentioned_actors
 
     @classmethod
     def get_tags_from_profile(self, profile):
@@ -42,8 +42,20 @@ class MovieRecommend(object):
     @classmethod
     def get_classification_from_profile(self, profile):
         textAnalytics = TextAnalytics()
-        classification = textAnalytics.classify(profile)
+        classification = textAnalytics.get_classification(profile)
         return classification
+
+    @classmethod
+    def get_entity_from_profile(self, profile):
+        textAnalytics = TextAnalytics()
+        entity = textAnalytics.get_entity(profile)
+        return entity
+
+    @classmethod
+    def get_entity_from_profile(self, profile):
+        textAnalytics = TextAnalytics()
+        entity = textAnalytics.get_entity(profile)
+        return entity
 
     @classmethod
     def recommend_movies_for_twitter(self, screen_name):
