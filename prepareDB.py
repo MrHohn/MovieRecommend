@@ -186,6 +186,28 @@ def prepare_rankings_movies_genres(mongo):
 def prepare_rankings_actor(mongo):
     # most popular actors
     print("[prepare_rankings_actor] Starting pepare ranking...")
+
+    most_popular_heap = queue.PriorityQueue()
+    cursor = mongo.db["actors_list"].find({})
+    for cur_actor in cursor:
+        if "popular" not in cur_actor:
+            continue
+        cur_popular = cur_actor["popular"]
+        most_popular_heap.put(Candidate(cur_actor["actor"], cur_popular))
+        # maintain the size
+        if most_popular_heap.qsize() > 100:
+            most_popular_heap.get()
+
+    most_popular = []
+    while not most_popular_heap.empty():
+        cur_candidate = most_popular_heap.get()
+        most_popular.append(cur_candidate.cid)
+    most_popular.reverse()
+
+    mongo.db["actors_list"].update_one({"actor": "all"}, {"$set": {
+        "most_popular": most_popular
+        }}, True)
+
     print("[prepare_rankings_actor] Done.")
 
 def prepare_rankings(mongo):
@@ -203,7 +225,7 @@ def prepare_rankings(mongo):
     prepare_rankings_movies_genres(mongo)
 
     # most popular actors
-    # runtime: s
+    # runtime: 1s
     prepare_rankings_actor(mongo)
 
     print("[prepare_rankings] Done (%0.2fs)." % (time.time() - startTime))
@@ -226,9 +248,12 @@ def prepare():
     anewParser.parse(mongo)
 
     # Pre-computation
+    # all kinds of ranking
     prepare_genres(mongo)
     prepare_actors(mongo)
     prepare_rankings(mongo)
+
+    # recommendations for all movies
     prepare_recommend(mongo)
 
     print("[prepareDB] Done (%0.2fs)." % (time.time() - startTime))
