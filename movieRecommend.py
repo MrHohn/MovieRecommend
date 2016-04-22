@@ -19,18 +19,20 @@ class MovieRecommend(object):
     def get_actors_from_profile(self, profile):
         # get all actors from database
         actors = set()
-        cursor = mongo.db["actors_list"].find({})
+        cursor = self.mongo.db["actors_list"].find({})
         for cur_actor in cursor:
             cur_name = cur_actor["actor"]
             actors.add(cur_name)
+        print("[MovieRecommend] Built up actors pool.")
 
-        count = 0
+        res = []
         for user in profile["extracted_users"]:
             if user[1] in actors:
-                count += 1
+                res.append(user[1])
+                # print(user[1].encode("utf8"))
 
-        print("count")
-        return []
+        print("[MovieRecommend] Found " + str(len(res)) + " actors from profile.")
+        return res
 
     @classmethod
     def get_tags_from_profile(self, profile):
@@ -387,36 +389,38 @@ def main():
     mongo = Mongo("movieRecommend")
     recommend = MovieRecommend(mongo)
 
-    # unit test, input: User ID = 4
-    print("[MovieRecommend] ***** Unit test for recommend_movies_for_user() *****")
-    user_id = 4
-    most_similar_movies = recommend.recommend_movies_for_user(user_id)
-    recommend.print_recommend(most_similar_movies)
-
-    # unit test, input:
-    # 28:  adventure
-    # 387: feel-good
-    # 599: life
-    # 704: new york city
-    # 794: police
-    print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_tags() *****")
-    tags = [28, 387, 599, 704, 794]
-    most_similar_movies = recommend.recommend_movies_based_on_tags(tags)
-    recommend.print_recommend(most_similar_movies)
-
-    # # unit test, input: Movie ID = 1 "Toy Story (1995)"
-    # print("[MovieRecommend] ***** Unit test for recommend_movies_for_movie_cs() *****")
-    # movie_id = 1
-    # most_similar_movies = recommend.recommend_movies_for_movie_cs(movie_id)
+    # # unit test, input: User ID = 4
+    # print("[MovieRecommend] ***** Unit test for recommend_movies_for_user() *****")
+    # user_id = 4
+    # most_similar_movies = recommend.recommend_movies_for_user(user_id)
     # recommend.print_recommend(most_similar_movies)
 
-    # unit test, input: Movie ID = 1 "Toy Story (1995)"
-    print("[MovieRecommend] ***** Unit test for recommend_movies_for_movie() *****")
-    movie_id = 1
-    most_similar_movies = recommend.recommend_movies_for_movie(movie_id)
-    recommend.print_recommend(most_similar_movies)
+    # # unit test, input:
+    # # 28:  adventure
+    # # 387: feel-good
+    # # 599: life
+    # # 704: new york city
+    # # 794: police
+    # print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_tags() *****")
+    # tags = [28, 387, 599, 704, 794]
+    # most_similar_movies = recommend.recommend_movies_based_on_tags(tags)
+    # recommend.print_recommend(most_similar_movies)
 
-    # recommend.recommend_movies_for_twitter("BrunoMars")
+    # # # unit test, input: Movie ID = 1 "Toy Story (1995)"
+    # # print("[MovieRecommend] ***** Unit test for recommend_movies_for_movie_cs() *****")
+    # # movie_id = 1
+    # # most_similar_movies = recommend.recommend_movies_for_movie_cs(movie_id)
+    # # recommend.print_recommend(most_similar_movies)
+
+    # # unit test, input: Movie ID = 1 "Toy Story (1995)"
+    # print("[MovieRecommend] ***** Unit test for recommend_movies_for_movie() *****")
+    # movie_id = 1
+    # most_similar_movies = recommend.recommend_movies_for_movie(movie_id)
+    # recommend.print_recommend(most_similar_movies)
+
+    # unit test, input: user screen_name "BrunoMars"
+    print("[MovieRecommend] ***** Unit test for recommend_movies_for_twitter() *****")
+    recommend.recommend_movies_for_twitter("BrunoMars")
 
 if __name__ == "__main__":
     main()
