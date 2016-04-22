@@ -47,13 +47,13 @@ class MovieRecommend(object):
             most_similar_movies = target_movie["similar_movies"]
         else:
             print("[MovieRecommend] Similar movies not calculated.")
+            target_mid = mid
             if "tags" not in target_movie:
                 print("[MovieRecommend] No tagging info found, use genres-based recommendation.")
                 target_genres = target_movie["genres"]
                 most_similar_movies = self.recommend_movies_based_on_genres(target_genres, target_mid)
             else:
                 print("[MovieRecommend] Tagging info found, now start calculating...")
-                target_mid = mid
                 target_tags_score = target_movie["tags"]
                 target_tags = set()
                 for tag_score in target_tags_score:
@@ -142,7 +142,7 @@ class MovieRecommend(object):
     # the core idea is tf.idf weight (content-based query)
     @classmethod
     def recommend_movies_based_on_tags(self, tags, target_mid=0):
-        print("[MovieRecommend] Target tags: " + str(tags))
+        # print("[MovieRecommend] Target tags: " + str(tags))
         total_movies_num = 9734
         movies_score = {}
         for tid in tags:
@@ -170,11 +170,11 @@ class MovieRecommend(object):
     # the core idea is tf.idf weight (content-based query)
     @classmethod
     def recommend_movies_based_on_genres(self, genres, target_mid=0):
-        print("[MovieRecommend] Target genres: " + str(genres))
+        # print("[MovieRecommend] Target genres: " + str(genres))
         total_movies_num = 34208
         movies_score = {}
         for genre in genres:
-            cur_genre = self.mongo.db["genres"].find_one({"genre": genre})
+            cur_genre = self.mongo.db["genres_list"].find_one({"genre": genre})
             cur_popular = cur_genre["popular"]
             cur_movies = cur_genre["relevant_movie"]
             for movie in cur_movies:

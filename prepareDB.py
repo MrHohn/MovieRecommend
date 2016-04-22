@@ -1,5 +1,6 @@
 import queue
 import pymongo
+import threading
 import time
 from DataService import Mongo
 from movieRecommend import MovieRecommend
@@ -7,6 +8,7 @@ from movieRecommend import Candidate
 import movieLensParser
 import anewParser
 
+# create genres to movies index
 def prepare_genres(mongo):
     print("[prepare_genres] Starting pepare genres list...")
     startTime = time.time()
@@ -39,6 +41,7 @@ def prepare_genres(mongo):
     print("[prepare_genres] Created index for genre in genres_list")
     print("[prepare_genres] Done (%0.2fs)." % (time.time() - startTime))
 
+# create actors to movies index
 def prepare_actors(mongo):
     print("[prepare_actors] Starting pepare actors list...")
     startTime = time.time()
@@ -94,6 +97,7 @@ def prepare_actors(mongo):
     print("[prepare_actors] Skipped " + str(skipCount) + " insertions.")
     print("[prepare_actors] Done (%0.2fs)." % (time.time() - startTime))
 
+# rank movies by rating and popularity among all
 def prepare_rankings_movies_all(mongo):
     # top rated movies among all
     # most popular movies among all
@@ -136,6 +140,7 @@ def prepare_rankings_movies_all(mongo):
 
     print("[prepare_rankings_movies_all] Done.")
 
+# rank movies by rating and popularity among each genre
 def prepare_rankings_movies_genres(mongo):
     # top rated movies for each genres
     # most popular movies for each genres
@@ -183,6 +188,7 @@ def prepare_rankings_movies_genres(mongo):
 
     print("[prepare_rankings_movies_genres] Done.")
 
+# rank actors by popularity among all
 def prepare_rankings_actor(mongo):
     # most popular actors
     print("[prepare_rankings_actor] Starting pepare ranking...")
@@ -208,8 +214,9 @@ def prepare_rankings_actor(mongo):
         "most_popular": most_popular
         }}, True)
 
-    print("[prepare_rankings_actor] Done.")
+    print("[prepare_rankings_actor] Done (%0.2fs)." % (time.time() - startTime))
 
+# prepare all kinds of rankings
 def prepare_rankings(mongo):
     print("[prepare_rankings] Starting pepare ranking...")
     startTime = time.time()
@@ -230,8 +237,67 @@ def prepare_rankings(mongo):
 
     print("[prepare_rankings] Done (%0.2fs)." % (time.time() - startTime))
 
-def prepare_recommend(mongo):
-    print("[prepare_recommend] TODO")
+class recommend_thread(threading.Thread):
+    def __init__(self, threadID, name, mid_list, thread_num):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.mongo = Mongo("movieRecommend")
+        self.mid_list = mid_list
+        self.thread_num = thread_num
+
+    def run(self):
+        prepare_recommend_thread(self.mongo, self.mid_list, self.thread_num)
+
+def prepare_recommend_thread(mongo, mid_list, thread_num):
+    print("[prepare_recommend_thread] Starting prepare recommendations...")
+    startTime = time.time()
+
+    recommend = MovieRecommend(mongo)
+    progressTotal = int(34208 / thread_num) + 1
+    count = 0
+
+    for cur_mid in mid_list:
+        count += 1
+        print("[prepare_recommend_thread] %5d movies processed so far. (%d%%) (%0.2fs)" % (count, int(count * 100 / progressTotal), time.time() - startTime))
+        similar_movies = recommend.recommend_movies_for_movie(cur_mid)
+        mongo.db["movie"].update_one({"mid": cur_mid}, {"$set": {
+            "similar_movies": similar_movies
+            }}, True)
+
+    print("[prepare_recommend_thread] Done.")
+
+# pre-calculate the recommendations for all movies
+def prepare_recommend(mongo, thread_num=2):
+    print("[prepare_recommend] Starting prepare recommendations...")
+    startTime = time.time()
+
+    mid_pool = []
+    for i in range(thread_num):
+        mid_pool.append([])
+
+    count = 0
+    cursor = mongo.db["movie"].find({}, no_cursor_timeout=True)
+    for cur_movie in cursor:
+        cur_mid = cur_movie["mid"]
+        mid_pool[count].append(cur_mid)
+        count += 1
+        if count == 4:
+            count = 0
+
+    # allocate mids to all threads
+    print("[prepare_recommend] Allocating mids to all threads...")
+    thread_poll = []
+    for i in range(thread_num):
+        thread_poll.append(recommend_thread(i, str(i), mid_pool[i], thread_num))
+
+    print("[prepare_recommend] Starting all threads...")
+    for i in range(thread_num):
+        thread_poll[i].start()
+
+    # Wait for all threads to complete
+    for thread in thread_poll:
+        thread.join()
+    print("[prepare_recommend] Done (%0.2fs)." % (time.time() - startTime))
 
 def prepare():
     print("[prepareDB] Starting pepare database...")
@@ -248,9 +314,10 @@ def prepare():
     anewParser.parse(mongo)
 
     # Pre-computation
-    # all kinds of ranking
     prepare_genres(mongo)
     prepare_actors(mongo)
+
+    # all kinds of ranking
     prepare_rankings(mongo)
 
     # recommendations for all movies
