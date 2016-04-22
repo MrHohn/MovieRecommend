@@ -12,8 +12,8 @@ from TweetAnalytics import TextAnalytics
 class MovieRecommend(object):
 
     @classmethod
-    def __init__(self):
-        self.mongo = Mongo("movieRecommend")
+    def __init__(self, mongo):
+        self.mongo = mongo
 
     # unfinished
     @classmethod
@@ -177,7 +177,8 @@ class MovieRecommend(object):
             cur_genre = self.mongo.db["genres"].find_one({"genre": genre})
             cur_popular = cur_genre["popular"]
             cur_movies = cur_genre["relevant_movie"]
-            for mid in cur_movies:
+            for movie in cur_movies:
+                mid = movie["mid"]
                 if target_mid == mid:
                     continue
                 score = self.weight_tf_idf(1, cur_popular, total_movies_num)
@@ -358,7 +359,8 @@ class Candidate(object):
 
 
 def main():
-    recommend = MovieRecommend()
+    mongo = Mongo("movieRecommend")
+    recommend = MovieRecommend(mongo)
 
     # unit test, input: User ID = 4
     print("[MovieRecommend] ***** Unit test for recommend_movies_for_user() *****")

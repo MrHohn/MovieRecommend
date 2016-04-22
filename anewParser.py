@@ -51,16 +51,12 @@ def parse(mongo):
     print("[anewAll] Parse Complete (%0.2fs)" % (time.time() - startTime))
     print("[anewAll] Found " + str(count) + " words.")
 
-def parseANEW():
-    mongo = Mongo("movieRecommend")
-
-    # Add ANEW all list into database.
-    # runtime: (0.05s)
-    parse(mongo)
-
 
 def main():
-    parseANEW()
+    # Add ANEW all list into database.
+    # runtime: (0.05s)
+    mongo = Mongo("movieRecommend")
+    parse(mongo)
 
 if __name__ == "__main__":
     main()

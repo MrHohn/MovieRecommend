@@ -11,8 +11,7 @@ import movieLensGenres
 import movieLensToIMDB
 
 def parse(mongo):
-
-    print("[prepareDB] Starting parse MovieLens database...")
+    print("[movieLensParser] Starting parse MovieLens database...")
     startTime = time.time()
 
     # Add all user ratings into database.
