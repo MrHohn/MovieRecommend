@@ -281,7 +281,7 @@ def prepare_recommend(mongo, thread_num=2):
         cur_mid = cur_movie["mid"]
         mid_pool[count].append(cur_mid)
         count += 1
-        if count == 4:
+        if count == thread_num:
             count = 0
 
     # allocate mids to all threads
