@@ -1,4 +1,4 @@
-import DataService
+from DataService import Mongo
 import pymongo
 import time
 

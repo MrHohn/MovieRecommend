@@ -276,7 +276,7 @@ def prepare_recommend(mongo, thread_num=2):
         mid_pool.append([])
 
     count = 0
-    cursor = mongo.db["movie"].find({}, no_cursor_timeout=True)
+    cursor = mongo.db["movie"].find({})
     for cur_movie in cursor:
         cur_mid = cur_movie["mid"]
         mid_pool[count].append(cur_mid)
