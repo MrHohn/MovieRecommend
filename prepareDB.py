@@ -65,7 +65,7 @@ def prepare_actors(mongo):
 
     progressInterval = 3000    # How often should we print a progress report to the console?
     progressTotal = 55740      # Approximate number of total actors.
-    bulkSize = 2000            # How many documents should we store in memory before inserting them into the database in bulk?
+    bulkSize = 500             # How many documents should we store in memory before inserting them into the database in bulk?
     bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db["actors_list"], ordered = False)
     count = 0
     skipCount = 0
@@ -74,10 +74,11 @@ def prepare_actors(mongo):
         if count % progressInterval == 0:
             print("[prepare_actors] %5d actors processed so far. (%d%%) (%0.2fs)" % (count, int(count * 100 / progressTotal), time.time() - startTime))
 
-        bulkPayload.find({"actor": actor}).update({"$set": {
-            "relevant_movie": movies,
-            "popular": len(movies)
-            }})
+        cur_doc = {}
+        cur_doc["actor"] = actor
+        cur_doc["relevant_movie"] = movies
+        cur_doc["popular"] = len(movies)
+        bulkPayload.insert(cur_doc)
 
         if count % bulkSize == 0:
             try:
@@ -214,7 +215,7 @@ def prepare_rankings_actor(mongo):
         "most_popular": most_popular
         }}, True)
 
-    print("[prepare_rankings_actor] Done (%0.2fs)." % (time.time() - startTime))
+    print("[prepare_rankings_actor] Done.")
 
 # prepare all kinds of rankings
 def prepare_rankings(mongo):
@@ -224,12 +225,12 @@ def prepare_rankings(mongo):
     # top rated movies among all
     # most popular movies among all
     # runtime: 6~7s
-    prepare_rankings_movies_all(mongo)
+    # prepare_rankings_movies_all(mongo)
 
     # top rated movies for each genres
     # most popular movies for each genres
     # runtime: 2~3s
-    prepare_rankings_movies_genres(mongo)
+    # prepare_rankings_movies_genres(mongo)
 
     # most popular actors
     # runtime: 1s
