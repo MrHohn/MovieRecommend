@@ -24,7 +24,7 @@ class MovieRecommend(object):
         for cur_actor in cursor:
             cur_name = cur_actor["actor"]
             actors.add(cur_name)
-        print("[MovieRecommend] Built up actors pool.")
+        print("[MovieRecommend] Built up actors pool, size: " + str(len(actors)))
 
         mentioned_actors = set()
         for user in profile["extracted_users"]:
@@ -69,8 +69,12 @@ class MovieRecommend(object):
         tags_from_hashtags = self.get_tags_from_hashtags(profile)
         tags_from_tweets = self.get_tags_from_tweets(profile)
 
-        print("[get_tags_from_profile] TODO")
-        return []
+        # combine two tags lists
+        tags = tags_from_hashtags
+        for tag in tags_from_tweets:
+            if tag not in tags:
+                tags.add(tag)
+        return tags
 
     @classmethod
     def get_classification_from_profile(self, profile):
@@ -82,7 +86,6 @@ class MovieRecommend(object):
         entity = self.textAnalytics.get_entity(profile)
         return entity
 
-    # unfinished
     @classmethod
     def recommend_movies_for_twitter(self, screen_name):
         print("[MovieRecommend] Target user screen_name: " + screen_name)
@@ -94,12 +97,18 @@ class MovieRecommend(object):
             profile = twitter.extract_profile(screen_name)
 
         print("[MovieRecommend] Profile retrieved.")
-        # actors = self.get_actors_from_profile(profile)
+        actors = self.get_actors_from_profile(profile)
         tags = self.get_tags_from_profile(profile)
-        # entity = self.get_entity_from_profile(profile)
-        # print(entity)
+
+        # call the combine recommendation algorithm
+        recommends = self.recommend_movies_combined(actors, tags, [])
 
         print("[recommend_movies_for_twitter] TODO")
+        return recommends
+
+    @classmethod
+    def recommend_movies_combined(self, actors, tags, movies):
+        print("[recommend_movies_combined] TODO")
         return []
 
     # generate up to 10 movies recommendations given a movie id

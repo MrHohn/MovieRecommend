@@ -197,7 +197,7 @@ def prepare_rankings_actor(mongo):
     most_popular_heap = queue.PriorityQueue()
     cursor = mongo.db["actors_list"].find({})
     for cur_actor in cursor:
-        if "popular" not in cur_actor:
+        if "popular" not in cur_actor or cur_actor["actor"] == "N/A":
             continue
         cur_popular = cur_actor["popular"]
         most_popular_heap.put(Candidate(cur_actor["actor"], cur_popular))
