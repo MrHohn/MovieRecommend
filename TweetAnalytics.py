@@ -75,7 +75,7 @@ class TextAnalytics(object):
     def concatenate_tweets(self, profile):
         user_tweets = ""
         for tweet in profile["extracted_tweets"]:
-            user_tweets += "\n" + tweet
+            user_tweets += tweet + "\n"
             # print(tweet.encode("utf8"))
         return user_tweets
 
@@ -93,6 +93,13 @@ class TextAnalytics(object):
         entity = self.textapi.Entities({"text": self.concatenate_tweets(profile)})
         return entity
 
+    @classmethod
+    def get_words_from_hashtag(self, hashtag):
+        words = re.findall("[A-Z][^A-Z]*", hashtag)
+        lower_words = []
+        for word in words:
+            lower_words.append(word.lower())
+        return lower_words
 
 def main():
     textAnalytics = TextAnalytics()
