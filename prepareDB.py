@@ -225,12 +225,12 @@ def prepare_rankings(mongo):
     # top rated movies among all
     # most popular movies among all
     # runtime: 6~7s
-    # prepare_rankings_movies_all(mongo)
+    prepare_rankings_movies_all(mongo)
 
     # top rated movies for each genres
     # most popular movies for each genres
     # runtime: 2~3s
-    # prepare_rankings_movies_genres(mongo)
+    prepare_rankings_movies_genres(mongo)
 
     # most popular actors
     # runtime: 1s
