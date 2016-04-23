@@ -14,6 +14,7 @@ class MovieRecommend(object):
     @classmethod
     def __init__(self, mongo):
         self.mongo = mongo
+        self.textAnalytics = TextAnalytics()
 
     @classmethod
     def get_actors_from_profile(self, profile):
@@ -25,38 +26,63 @@ class MovieRecommend(object):
             actors.add(cur_name)
         print("[MovieRecommend] Built up actors pool.")
 
-        mentioned_actors = []
+        mentioned_actors = set()
         for user in profile["extracted_users"]:
             if user[1] in actors:
-                mentioned_actors.append(user[1])
+                mentioned_actors.add(user[1])
                 # print(user[1].encode("utf8"))
 
         print("[MovieRecommend] Found " + str(len(mentioned_actors)) + " actors from profile.")
         return mentioned_actors
 
     @classmethod
+    def get_tags_from_hashtags(self, profile):
+        # get all actors from database
+        tags = set()
+        cursor = self.mongo.db["tag"].find({})
+        for cur_tag in cursor:
+            cur_content = cur_tag["content"]
+            # consider only single word at this point
+            if " " not in cur_content:
+                tags.add(cur_content)
+        print("[MovieRecommend] Built up tags pool, size: " + str(len(tags)))
+
+        mentioned_tags = set()
+        for hashtag in profile["extracted_tags"]:
+            # print(hashtag.encode("utf8"))
+            words = self.textAnalytics.get_words_from_hashtag(hashtag)
+            for word in words:
+                if word in tags:
+                    mentioned_tags.add(word)
+
+        print("[MovieRecommend] Found " + str(len(mentioned_tags)) + " tags from hashtags.")
+        # print(mentioned_tags)
+        return mentioned_tags
+
+    @classmethod
+    def get_tags_from_tweets(self, profile):
+        print("[get_tags_from_tweets] TODO")
+        return []
+
+    @classmethod
     def get_tags_from_profile(self, profile):
-        print("TODO")
+        tags_from_hashtags = self.get_tags_from_hashtags(profile)
+        tags_from_tweets = self.get_tags_from_tweets(profile)
+
+        print("[get_tags_from_profile] TODO")
         return []
 
     @classmethod
     def get_classification_from_profile(self, profile):
-        textAnalytics = TextAnalytics()
-        classification = textAnalytics.get_classification(profile)
+        classification = self.textAnalytics.get_classification(profile)
         return classification
 
     @classmethod
     def get_entity_from_profile(self, profile):
-        textAnalytics = TextAnalytics()
-        entity = textAnalytics.get_entity(profile)
+        entity = self.textAnalytics.get_entity(profile)
         return entity
 
-    @classmethod
-    def get_entity_from_profile(self, profile):
-        textAnalytics = TextAnalytics()
-        entity = textAnalytics.get_entity(profile)
-        return entity
-
+    # unfinished
     @classmethod
     def recommend_movies_for_twitter(self, screen_name):
         print("[MovieRecommend] Target user screen_name: " + screen_name)
@@ -68,9 +94,12 @@ class MovieRecommend(object):
             profile = twitter.extract_profile(screen_name)
 
         print("[MovieRecommend] Profile retrieved.")
-        actors = self.get_actors_from_profile(profile)
+        # actors = self.get_actors_from_profile(profile)
+        tags = self.get_tags_from_profile(profile)
+        # entity = self.get_entity_from_profile(profile)
+        # print(entity)
 
-        print("TODO")
+        print("[recommend_movies_for_twitter] TODO")
         return []
 
     # generate up to 10 movies recommendations given a movie id

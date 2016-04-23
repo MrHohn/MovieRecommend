@@ -6,11 +6,13 @@ class User(object):
     @classmethod
     def __init__(self, user_name, exist=False):
         self.name = user_name
+        self.mongo = Mongo("movieRecommend")
+        self.recommend = MovieRecommend(mongo)
         if not exist:
             # tag ids
             self.tags = set()
             # movie ids
-            self.like_movies = set()
+            self.movies = set()
         else:
             self.load_user()
 
@@ -28,13 +30,13 @@ class User(object):
             self.tags.remove(tag)
 
     @classmethod
-    def add_like(self, like):
-        self.like_movies.add(like)
+    def add_movie(self, movie):
+        self.movies.add(movie)
 
     @classmethod
-    def remove_like(self, like):
-        if like in self.like_movies:
-            self.like_movies.remove(like)
+    def remove_movie(self, movie):
+        if movie in self.movies:
+            self.movies.remove(movie)
 
     # store user into database
     @classmethod
@@ -45,3 +47,11 @@ class User(object):
     @classmethod
     def load_user(self):
         print("TODO")
+
+    @classmethod
+    def get_recommend_by_tags(self):
+        return self.recommend.recommend_movies_based_on_tags(self.tags)
+
+    @classmethod
+    def get_recommend_by_history(self):
+        return self.recommend.get_similar_users_by_history(self.movies)
