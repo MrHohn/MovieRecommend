@@ -52,7 +52,7 @@ def parse(mongo, collectionName):
 						} )
 						bulkCount += 1
 						keywords = []
-				elif valueInd == 1 and keywordWhitelist(value): #Keyword
+				elif valueInd == 1: #Keyword
 					keywords.append(value)
 					updateCount += 1
 				valueInd += 1
@@ -122,14 +122,3 @@ def collectKeywords(mongo):
 
 	print("[*] Complete (%0.2fs)" % (time.time()-startTime))
 	print("[*] Added", str(keywordCount), "items to the keywords collection.")
-
-# IMDB has a huge number of keywords (100,000+), many of which are only used a couple times, and many others
-# that are not useful for our purposes.
-#
-# TODO: Analyse the keyword frequency collection, and find keywords that might be useful. We'll only store
-# those in our database. Perhaps also try to pair IMDB keywords with keywords from the MovieLens genome dataset.
-def keywordWhitelist(keyword):
-	keywordsToKeep = []
-	if keyword in keywordsToKeep:
-		return True
-	return False
