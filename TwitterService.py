@@ -62,25 +62,22 @@ class Tweepy(object):
 
     @classmethod
     def get_user_hashtags(self, tweet_list):
-        all_tags = set()
+        all_tags = []
         for tweet in tweet_list:
             cur_tags = tweet.entities["hashtags"]
             for tag in cur_tags:
                 # print(tag)
-                all_tags.add(tag["text"])
+                all_tags.append(tag["text"])
         return all_tags
 
     @classmethod
     def get_user_mentions(self, tweet_list):
         all_mentions = []
-        duplicate_detect = set()
         for tweet in tweet_list:
             cur_mentions = tweet.entities["user_mentions"]
             for mention in cur_mentions:
                 # print(mention)
-                if mention["screen_name"] not in duplicate_detect:
-                    duplicate_detect.add(mention["screen_name"])
-                    all_mentions.append(mention)
+                all_mentions.append(mention)
         return all_mentions
 
     @classmethod
@@ -150,57 +147,50 @@ class Tweepy(object):
         profile = self.get_user_profile(screen_name)
         # self.print_basic_profile(profile)
 
-        extracted_tags = set()
-        extracted_tweets = set()
-        extracted_screen_name = set()
+        extracted_tags = []
+        extracted_tweets = []
         extracted_users = []
 
         # unit test for get_user_tweets(screen_name, count)
         tweet_list = self.get_user_tweets(screen_name) # second argument is optional, default is 3,200
         for tweet in tweet_list:
-            extracted_tweets.add(tweet.text)
+            extracted_tweets.append(tweet.text)
             # print("[Twitter] Tweet: " + str(tweet.text.encode("utf8")))
 
         # unit test for get_user_hashtags(tweet_list)
         hashtags = self.get_user_hashtags(tweet_list)
         for tag in hashtags:
-            extracted_tags.add(tag)
+            extracted_tags.append(tag)
             # print("[Twitter] Tag: " + tag)
 
         # unit test for get_user_mentions(tweet_list)
         mentions = self.get_user_mentions(tweet_list)
         for mention in mentions:
-            if mention["screen_name"] not in extracted_screen_name:
-                extracted_screen_name.add(mention["screen_name"])
-                extracted_users.append([mention["screen_name"], mention["name"]])
+            extracted_users.append([mention["screen_name"], mention["name"]])
             # print("[Twitter] Mention screen_name: " + mention["screen_name"])
 
         # unit test for get_user_likes(screen_name, count)
         like_list = self.get_user_likes(screen_name) # second argument is optional, default is 1,000
         for like in like_list:
-            extracted_tweets.add(like.text)
+            extracted_tweets.append(like.text)
             # print("[Twitter] Like: " + str(like.text.encode("utf8")))
 
         # unit test for get_user_hashtags(tweet_list)
         hashtags = self.get_user_hashtags(like_list)
         for tag in hashtags:
-            extracted_tags.add(tag)
+            extracted_tags.append(tag)
             # print("[Twitter] Tag: " + tag)
 
         # unit test for get_user_mentions(tweet_list)
         mentions = self.get_user_mentions(like_list)
         for mention in mentions:
-            if mention["screen_name"] not in extracted_screen_name:
-                extracted_screen_name.add(mention["screen_name"])
-                extracted_users.append([mention["screen_name"], mention["name"]])
+            extracted_users.append([mention["screen_name"], mention["name"]])
             # print("[Twitter] Mention screen_name: " + mention["screen_name"])
 
         # unit test for get_user_followings(screen_name)
         followings = self.get_user_followings(screen_name)
         for following in followings:
-            if following.screen_name not in extracted_screen_name:
-                extracted_screen_name.add(following.screen_name)
-                extracted_users.append([following.screen_name, following.name])
+            extracted_users.append([following.screen_name, following.name])
             # print("[Twitter] Friend's screen_name: " + following.screen_name)
 
         # unit test for get_suggested_categories(screen_name)
@@ -214,8 +204,8 @@ class Tweepy(object):
         # for user in users:
         #     print("[Twitter] Suggested user: " + user.name)
 
-        profile["extracted_tags"] = list(extracted_tags)
-        profile["extracted_tweets"] = list(extracted_tweets)
+        profile["extracted_tags"] = extracted_tags
+        profile["extracted_tweets"] = extracted_tweets
         profile["extracted_users"] = extracted_users
 
         mongo = Mongo("movieRecommend")
@@ -227,13 +217,14 @@ class Tweepy(object):
 
 def main():
     twitter = Tweepy()
-    # twitter.get_rate_limit()
+    twitter.get_rate_limit()
+    # twitter.extract_profile("LeoDiCaprio")
     # twitter.extract_profile("BrunoMars")
     # cats = twitter.get_suggested_categories("BrunoMars")
     # cats = twitter.get_suggested_categories("LeoDiCaprio")
     # cats = twitter.get_suggested_categories("johnydepp007")
-    cats = twitter.get_suggested_categories("ZihongZ")
-    print(cats)
+    # cats = twitter.get_suggested_categories("ZihongZ")
+    # print(cats)
 
 if __name__ == "__main__":
     main()

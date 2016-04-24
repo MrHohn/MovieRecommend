@@ -1,4 +1,4 @@
-import DataService
+from DataService import Mongo
 import pymongo
 import time
 import re
@@ -115,7 +115,7 @@ class TextAnalytics(object):
         return lower_words
 
 def main():
-    textAnalytics = TextAnalytics()
+    textAnalytics = TextAnalytics(Mongo("movieRecommend"))
     # sentence = "Congrats to @HCP_Nevada on their health care headliner win"
     # sentence = "b'I love you @iHeartRadio! I love you hooligans! love you Sriracha. I love you @LeoDiCaprio. Thinking of u @holyfield  https://t.co/iPoHf03G4R'"
     sentence = "The secret life of Walter Mitty is a fantastic movie"
@@ -123,7 +123,8 @@ def main():
     score = textAnalytics.gain_sentiment(sentence)
     print("[TweetAnalytics] Sentiment score: " + str(score))
 
-    hashtag = "NothingTo1990sDoA-story"
+    hashtag = "Askthedragon"
+    # hashtag = "NothingTo1990sDoA-story"
     # hashtag = "9/11"
     # hashtag = "1980sWhereAreYou"    
     print(textAnalytics.get_words_from_hashtag(hashtag))

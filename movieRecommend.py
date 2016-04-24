@@ -26,13 +26,18 @@ class MovieRecommend(object):
             actors_pool.add(cur_name)
         print("[MovieRecommend] Built up actors pool, size: " + str(len(actors_pool)))
 
-        mentioned_actors = set()
+        # gain all mentioned actors and the frequency
+        mentioned_actors = {}
         for user in profile["extracted_users"]:
             if user[1] in actors_pool:
-                mentioned_actors.add(user[1])
                 # print(user[1].encode("utf8"))
+                if user[1] not in mentioned_actors:
+                    mentioned_actors[user[1]] = 1
+                else:
+                    mentioned_actors[user[1]] += 1                    
 
         print("[MovieRecommend] Found " + str(len(mentioned_actors)) + " actors from profile.")
+        # print(mentioned_actors)
         return mentioned_actors
 
     @classmethod
@@ -45,13 +50,17 @@ class MovieRecommend(object):
             tags_pool.add(cur_content)
         print("[MovieRecommend] Built up tags pool, size: " + str(len(tags_pool)))
 
-        mentioned_tags = set()
+        # gain all mentioned tags and the frequency
+        mentioned_tags = {}
         for hashtag in profile["extracted_tags"]:
             # print(hashtag.encode("utf8"))
             words = self.textAnalytics.get_words_from_hashtag(hashtag)
             for word in words:
                 if word in tags_pool:
-                    mentioned_tags.add(word)
+                    if word not in mentioned_tags:
+                        mentioned_tags[word] = 1
+                    else:
+                        mentioned_tags[word] += 1
 
         print("[MovieRecommend] Found " + str(len(mentioned_tags)) + " tags from hashtags.")
         # print(mentioned_tags)
@@ -65,14 +74,16 @@ class MovieRecommend(object):
     @classmethod
     def get_tags_from_profile(self, profile):
         tags_from_hashtags = self.get_tags_from_hashtags(profile)
-        tags_from_tweets = self.get_tags_from_tweets(profile)
+        # tags_from_tweets = self.get_tags_from_tweets(profile)
 
-        # combine two tags lists
-        tags = tags_from_hashtags
-        for tag in tags_from_tweets:
-            if tag not in tags:
-                tags.add(tag)
-        return tags
+        # # combine two tags lists
+        # tags = tags_from_hashtags
+        # for tag in tags_from_tweets:
+        #     if tag not in tags:
+        #         tags.add(tag)
+        # return tags
+
+        return tags_from_hashtags
 
     @classmethod
     def get_classification_from_profile(self, profile):
@@ -108,14 +119,15 @@ class MovieRecommend(object):
         movies_score = {}
 
         total_movies_num = 9734 # num of movies with tags
-        for tag in tags:
+        for tag in tags.keys():
             cur_tag = self.mongo.db["tag"].find_one({"content": tag})
             cur_popular = cur_tag["popular"]
             cur_movies = cur_tag["relevant_movie"]
             for relevance_pair in cur_movies:
                 attrs = relevance_pair.split(",")
                 mid = int(attrs[0])
-                relevance = float(attrs[1])
+                # consider also the frequency
+                relevance = float(attrs[1]) * (1 + math.log(tags[tag], 5))
                 score = self.weight_tf_idf(relevance, cur_popular, total_movies_num, 2)
                 if mid not in movies_score:
                     movies_score[mid] = score
@@ -123,13 +135,14 @@ class MovieRecommend(object):
                     movies_score[mid] += score
 
         total_actors_num = 55741
-        for actor in actors:
+        for actor in actors.keys():
             cur_actor = self.mongo.db["actors_list"].find_one({"actor": actor})
             cur_popular = cur_actor["popular"]
             cur_movies = cur_actor["relevant_movie"]
             for cur_movie in cur_movies:
                 mid = cur_movie["mid"]
-                relevance = 1
+                # consider also the frequency
+                relevance = 1 + math.log(actors[actor], 5)
                 score = self.weight_tf_idf(relevance, cur_popular, total_actors_num, 10)
                 if mid not in movies_score:
                     movies_score[mid] = score
@@ -399,7 +412,7 @@ class MovieRecommend(object):
     @classmethod
     def get_similar_users_by_history(self, target_like, target_id=0):
         print("[MovieRecommend] Start calculating similar users...")
-        if len(target_like) < 3:
+        if len(target_like) < 5:
             print("[MovieRecommend] Not enough rating history: " + str(len(target_like)) + ".")
             return []
         print("[MovieRecommend] Sufficient history: " + str(len(target_like))+ ", now start calculating...")
@@ -493,7 +506,8 @@ def main():
 
     # unit test, input: user screen_name "BrunoMars"
     print("[MovieRecommend] ***** Unit test for recommend_movies_for_twitter() *****")
-    user_screen_name = "BrunoMars"
+    # user_screen_name = "BrunoMars"
+    user_screen_name = "LeoDiCaprio"
     recommends = recommend.recommend_movies_for_twitter(user_screen_name)
     recommend.print_recommend(recommends)
 
