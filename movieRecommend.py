@@ -100,16 +100,48 @@ class MovieRecommend(object):
         actors = self.get_actors_from_profile(profile)
         tags = self.get_tags_from_profile(profile)
 
-        # call the combine recommendation algorithm
-        recommends = self.recommend_movies_combined(actors, tags, [])
-
-        print("[recommend_movies_for_twitter] TODO")
+        # Combine actors and tags to recommend
+        recommends = self.recommend_movies_combined(actors, tags)
+        print("[MovieRecommend] Earned recommendations for Twitter.")
         return recommends
 
     @classmethod
-    def recommend_movies_combined(self, actors, tags, movies):
-        print("[recommend_movies_combined] TODO")
-        return []
+    def recommend_movies_combined(self, actors, tags):
+        movies_score = {}
+
+        total_movies_num = 9734 # num of movies with tags
+        for tag in tags:
+            cur_tag = self.mongo.db["tag"].find_one({"content": tag})
+            cur_popular = cur_tag["popular"]
+            cur_movies = cur_tag["relevant_movie"]
+            for relevance_pair in cur_movies:
+                attrs = relevance_pair.split(",")
+                mid = int(attrs[0])
+                relevance = float(attrs[1])
+                score = self.weight_tf_idf(relevance, cur_popular, total_movies_num, 2)
+                if mid not in movies_score:
+                    movies_score[mid] = score
+                else:
+                    movies_score[mid] += score
+
+        total_actors_num = 55741
+        for actor in actors:
+            cur_actor = self.mongo.db["actors_list"].find_one({"actor": actor})
+            cur_popular = cur_actor["popular"]
+            cur_movies = cur_actor["relevant_movie"]
+            for cur_movie in cur_movies:
+                mid = cur_movie["mid"]
+                relevance = 1
+                score = self.weight_tf_idf(relevance, cur_popular, total_actors_num, 10)
+                if mid not in movies_score:
+                    movies_score[mid] = score
+                else:
+                    movies_score[mid] += score
+
+        # put all candidates to compete, gain top-k
+        recommend = self.gain_top_k(movies_score, 20)
+        # self.print_recommend(recommend)
+        return recommend
 
     # generate up to 10 movies recommendations given a movie id
     # directly using recommend_movies_based_on_tags()
@@ -139,6 +171,7 @@ class MovieRecommend(object):
 
             print("[MovieRecommend] Calculation complete.")
 
+            # now don't store the result here for speeding up (batching outside)
             # self.mongo.db["movie"].update_one({"mid": target_mid}, {"$set": {"similar_movies": most_similar_movies}}, True)
             # print("[MovieRecommend] Stored similar movies into DB.")
 
@@ -232,7 +265,7 @@ class MovieRecommend(object):
                 if target_mid == mid:
                     continue
                 relevance = float(attrs[1])
-                score = self.weight_tf_idf(relevance, cur_popular, total_movies_num)
+                score = self.weight_tf_idf(relevance, cur_popular, total_movies_num, 2)
                 if mid not in movies_score:
                     movies_score[mid] = score
                 else:
@@ -258,7 +291,8 @@ class MovieRecommend(object):
                 mid = movie["mid"]
                 if target_mid == mid:
                     continue
-                score = self.weight_tf_idf(1, cur_popular, total_movies_num)
+                relevance = 1
+                score = self.weight_tf_idf(relevance, cur_popular, total_movies_num, 2)
                 if mid not in movies_score:
                     movies_score[mid] = score
                 else:
@@ -270,8 +304,8 @@ class MovieRecommend(object):
         return recommend
 
     @classmethod
-    def weight_tf_idf(self, tf, df, num_docs):
-        return tf * math.log(float(num_docs) / df, 2)
+    def weight_tf_idf(self, tf, df, num_docs, base):
+        return tf * math.log(float(num_docs) / df, base)
 
     # gain top-k candidates given a dictionary storing their scores
     @classmethod
@@ -299,7 +333,7 @@ class MovieRecommend(object):
         print("[MovieRecommend] - Recommend movies: -")
         for movie_id in recommend:
             movie_data = self.mongo.db["movie"].find_one({"mid": movie_id})
-            print("[MovieRecommend] imdbid: %7d, %s" % (movie_data["imdbid"],movie_data["title"]))
+            print("[MovieRecommend] imdbid: %7d, %s" % (movie_data["imdbid"],movie_data["title"].encode("utf8")))
         print("[MovieRecommend] - Recommend end. -")
 
     # generate up to 20 movies recommendations given an User ID
@@ -439,38 +473,31 @@ def main():
     mongo = Mongo("movieRecommend")
     recommend = MovieRecommend(mongo)
 
-    # # unit test, input: User ID = 4
-    # print("[MovieRecommend] ***** Unit test for recommend_movies_for_user() *****")
-    # user_id = 4
-    # most_similar_movies = recommend.recommend_movies_for_user(user_id)
-    # recommend.print_recommend(most_similar_movies)
+    # unit test, input: User ID = 4
+    print("[MovieRecommend] ***** Unit test for recommend_movies_for_user() *****")
+    user_id = 4
+    most_similar_movies = recommend.recommend_movies_for_user(user_id)
+    recommend.print_recommend(most_similar_movies)
 
-    # # unit test, input:
-    # # 28:  adventure
-    # # 387: feel-good
-    # # 599: life
-    # # 704: new york city
-    # # 794: police
-    # print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_tags() *****")
-    # tags = [28, 387, 599, 704, 794]
-    # most_similar_movies = recommend.recommend_movies_based_on_tags(tags)
-    # recommend.print_recommend(most_similar_movies)
+    # unit test, input tags:
+    # [28, 387, 599, 704, 794]
+    # [adventure, feel-good, life, new york city, police]
+    print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_tags() *****")
+    tags = [28, 387, 599, 704, 794]
+    most_similar_movies = recommend.recommend_movies_based_on_tags(tags)
+    recommend.print_recommend(most_similar_movies)
 
-    # # # unit test, input: Movie ID = 1 "Toy Story (1995)"
-    # # print("[MovieRecommend] ***** Unit test for recommend_movies_for_movie_cs() *****")
-    # # movie_id = 1
-    # # most_similar_movies = recommend.recommend_movies_for_movie_cs(movie_id)
-    # # recommend.print_recommend(most_similar_movies)
-
-    # # unit test, input: Movie ID = 1 "Toy Story (1995)"
-    # print("[MovieRecommend] ***** Unit test for recommend_movies_for_movie() *****")
-    # movie_id = 1
-    # most_similar_movies = recommend.recommend_movies_for_movie(movie_id)
-    # recommend.print_recommend(most_similar_movies)
+    # unit test, input: Movie ID = 1 "Toy Story (1995)"
+    print("[MovieRecommend] ***** Unit test for recommend_movies_for_movie() *****")
+    movie_id = 1
+    most_similar_movies = recommend.recommend_movies_for_movie(movie_id)
+    recommend.print_recommend(most_similar_movies)
 
     # unit test, input: user screen_name "BrunoMars"
     print("[MovieRecommend] ***** Unit test for recommend_movies_for_twitter() *****")
-    recommend.recommend_movies_for_twitter("BrunoMars")
+    user_screen_name = "BrunoMars"
+    recommends = recommend.recommend_movies_for_twitter(user_screen_name)
+    recommend.print_recommend(recommends)
 
 if __name__ == "__main__":
     main()

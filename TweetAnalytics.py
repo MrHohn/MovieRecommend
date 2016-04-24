@@ -96,6 +96,7 @@ class TextAnalytics(object):
     @classmethod
     def get_words_from_hashtag(self, hashtag):
         words = re.findall("[A-Z][^A-Z]*", hashtag)
+        # words = re.findall("[A-Z][a-z]*", hashtag)
         lower_words = []
         for word in words:
             lower_words.append(word.lower())
@@ -109,6 +110,9 @@ def main():
     print("[TweetAnalytics] Evaluating sentence: " + sentence)
     score = textAnalytics.gain_sentiment(sentence)
     print("[TweetAnalytics] Sentiment score: " + str(score))
+
+    hashtag = "NothingTo1DoA"
+    print(textAnalytics.get_words_from_hashtag(hashtag))
 
 if __name__ == "__main__":
     main()

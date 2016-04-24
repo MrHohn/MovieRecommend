@@ -1,4 +1,4 @@
-import DataService
+from DataService import Mongo
 import tweepy
 import time
 
@@ -218,7 +218,7 @@ class Tweepy(object):
         profile["extracted_tweets"] = list(extracted_tweets)
         profile["extracted_users"] = extracted_users
 
-        mongo = DataService.Mongo("movieRecommend")
+        mongo = Mongo("movieRecommend")
         print("[Twitter] Inserting user profile into database...")
         mongo.db["user_profiles"].insert_one(profile)
         print("[Twitter] Extraction done (%0.2fs)." % (time.time() - startTime))
