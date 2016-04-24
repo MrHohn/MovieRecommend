@@ -81,14 +81,19 @@ class Tweepy(object):
         return all_mentions
 
     @classmethod
-    def get_user_followings(self, screen_name):
+    def get_user_followings(self, screen_name, max_count=2000):
         # reference: https://dev.twitter.com/rest/reference/get/friends/list
+        # The number of users to return per page is up to a maximum of 200
+        # the rate limit is 15 calss per 15 minutes
+        # hence we set up a reasonable limitation: max_count = 2000
         friend_list = []
         friend_count = 0
         print("[Twitter] Getting user friends...")
-        for user in tweepy.Cursor(self.api.friends, id=screen_name).items():
+        for user in tweepy.Cursor(self.api.friends, id=screen_name, count=200).items():
             friend_list.append(user)
             friend_count += 1
+            if friend_count >= max_count:
+                break
         print("[Twitter] Retrieved friends count: " + str(friend_count))
         return friend_list
 
