@@ -239,10 +239,10 @@ def prepare_rankings(mongo):
     print("[prepare_rankings] Done (%0.2fs)." % (time.time() - startTime))
 
 class recommend_thread(threading.Thread):
-    def __init__(self, threadID, name, mid_list, thread_num):
+    def __init__(self, threadID, name, mid_list, thread_num, mongo):
         threading.Thread.__init__(self)
         self.threadID = threadID
-        self.mongo = Mongo("movieRecommend")
+        self.mongo = mongo
         self.mid_list = mid_list
         self.thread_num = thread_num
 
@@ -305,7 +305,7 @@ def prepare_recommend(mongo, thread_num=2):
     print("[prepare_recommend] Allocating mids to all threads...")
     thread_poll = []
     for i in range(thread_num):
-        thread_poll.append(recommend_thread(i, str(i), mid_pool[i], thread_num))
+        thread_poll.append(recommend_thread(i, str(i), mid_pool[i], thread_num, mongo))
 
     print("[prepare_recommend] Starting all threads...")
     for i in range(thread_num):

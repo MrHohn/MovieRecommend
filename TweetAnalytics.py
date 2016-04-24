@@ -6,6 +6,7 @@ import math
 import anewParser
 from textblob import TextBlob
 from aylienapiclient import textapi
+from nltk.util import ngrams
 
 # Sentiment degree calculation is referring Visualizing Twitter Sentiment from NCSU
 # https://www.csc.ncsu.edu/faculty/healey/tweet_viz/
@@ -15,8 +16,8 @@ from aylienapiclient import textapi
 class TextAnalytics(object):
 
     @classmethod
-    def __init__(self):
-        mongo = DataService.Mongo("movieRecommend")
+    def __init__(self, mongo):
+        mongo = mongo
         anewDoc = mongo.db["anew"].find_one({"type": "all"})
         if anewDoc is None:
             anewParser.parse(mongo)
@@ -95,11 +96,22 @@ class TextAnalytics(object):
 
     @classmethod
     def get_words_from_hashtag(self, hashtag):
-        words = re.findall("[A-Z][^A-Z]*", hashtag)
-        # words = re.findall("[A-Z][a-z]*", hashtag)
+        # words = re.findall("[A-Z][^A-Z]*", hashtag)
+        words = re.findall("[A-Z][^A-Z0-9]*", hashtag)
+        num_words = re.findall("[0-9][^A-Z]*", hashtag)
         lower_words = []
-        for word in words:
+        for word in (words + num_words):
             lower_words.append(word.lower())
+
+        # also generate 2-4 grams words
+        for i in range(2, 4, 1):
+            grams = ngrams(words, i)
+            for gram in grams:
+                newgram = gram[0]
+                for j in range(len(gram) - 1):
+                    newgram += " " + gram[j + 1]
+                lower_words.append(newgram.lower())
+
         return lower_words
 
 def main():
@@ -111,7 +123,9 @@ def main():
     score = textAnalytics.gain_sentiment(sentence)
     print("[TweetAnalytics] Sentiment score: " + str(score))
 
-    hashtag = "NothingTo1DoA"
+    hashtag = "NothingTo1990sDoA-story"
+    # hashtag = "9/11"
+    # hashtag = "1980sWhereAreYou"    
     print(textAnalytics.get_words_from_hashtag(hashtag))
 
 if __name__ == "__main__":
