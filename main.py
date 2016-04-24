@@ -25,10 +25,10 @@ class MovieApp:
 		self.mainframe = tk.Frame(root)
 		self.root = root
 		self.lastRecommend = [] # Last set of recommended titles, used for restoring the recommendation screen
-		self.historyList = ()   # Used for the movie history search screen. Stores the user's current movie history.
-		self.historyVar = tk.StringVar(value=self.historyList)
-		self.searchResults = ()
-		self.searchVar = tk.StringVar(value=self.searchResults)
+		self.historyList = set()   # Used for the movie history search screen. Stores the user's current movie history.
+		self.historyVar = tk.StringVar(value=tuple(self.historyList))
+		self.searchResults = []
+		self.searchVar = tk.StringVar(value=tuple(self.searchResults))
 		self.searchTimer = 0
 		self.lastSearchContent = "-"
 		self.lastSearchUpdate = "-"
@@ -185,8 +185,8 @@ class MovieApp:
 		self.searchBar = tk.Entry(searchframe)
 		self.searchBar.grid(row=1, column=0, sticky=('E','W'), pady=(0,15))
 
-		searchResults = tk.Listbox(searchframe, listvariable=self.searchVar, height=13, width=55)
-		searchResults.grid(row=2, column=0, sticky=('E', 'W'))
+		self.searchList = tk.Listbox(searchframe, listvariable=self.searchVar, height=13, width=55, selectmode=tk.EXTENDED)
+		self.searchList.grid(row=2, column=0, sticky=('E', 'W'))
 
 		addButton = tk.Button(searchframe, text="Add Movie", command=self.add_to_history)
 		addButton.grid(row=3, column=0, sticky=('E','W'), pady=(0,35))
@@ -202,12 +202,13 @@ class MovieApp:
 		sideframe.configure(background=BGCOLOR)
 		sideframe.place(anchor='e', relx=1, rely=.58)
 
-		historyBox = tk.Listbox(sideframe, listvariable=self.historyVar, height=25, width=55)
-		historyBox.grid(row=0, column=0, sticky=('N','S', 'E', 'W'))
+		self.historyBox = tk.Listbox(sideframe, listvariable=self.historyVar, height=25, width=55, selectmode=tk.EXTENDED)
+		self.historyBox.bind("<Delete>", self.delete_from_history)
+		self.historyBox.grid(row=0, column=0, sticky=('N','S', 'E', 'W'))
 
-		scrollHistory = tk.Scrollbar(sideframe, orient=tk.VERTICAL, command=historyBox.yview)
+		scrollHistory = tk.Scrollbar(sideframe, orient=tk.VERTICAL, command=self.historyBox.yview)
 		scrollHistory.grid(row=0, column=1, sticky=('N','S'))
-		historyBox['yscrollcommand'] = scrollHistory.set
+		self.historyBox['yscrollcommand'] = scrollHistory.set
 
 		saveButton = tk.Button(sideframe, text="Save...", command=self.save_history)
 		saveButton.grid(row=1, column=0, columnspan=2, sticky=('E','W'))
@@ -216,7 +217,16 @@ class MovieApp:
 		loadButton.grid(row=2, column=0, columnspan=2, sticky=('E','W'))
 
 	def add_to_history(self):
-		print("todo")
+		selectedMovies = self.searchList.curselection()
+		for selectionIndex in selectedMovies:
+			self.historyList.add(self.searchList.get(selectionIndex))
+		self.historyVar.set(tuple(self.historyList))
+
+	def delete_from_history(self, event):
+		selectedMovies = self.historyBox.curselection()
+		for selectionIndex in selectedMovies:
+			self.historyList.remove(self.historyBox.get(selectionIndex))
+		self.historyVar.set(tuple(self.historyList))
 
 	def save_history(self):
 		print("todo")
@@ -279,6 +289,7 @@ class MovieApp:
 
 	# Main update loop for timing and such
 	def update(self):
+		# Handle auto-complete for the search form
 		if self.searchBar != None:
 			if self.searchBar.get() == self.lastSearchContent:
 				self.searchTimer = 0
@@ -289,13 +300,14 @@ class MovieApp:
 				self.searchTimer += 1
 			else:
 				self.lastSearchContent = self.searchBar.get()
-				self.searchResults = ()
+				self.searchResults = []
 				results = self.mongo.db["movies"].find({
 						"title":{"$regex":"^"+self.searchBar.get(), "$options":"i"}
 					}).limit(15).sort("imdbtitle", 1)
 				for result in results:
-					self.searchResults = self.searchResults + (result["imdbtitle"],)
-				self.searchVar.set(self.searchResults)
+					self.searchResults.append(result["imdbtitle"])
+				self.searchVar.set(tuple(self.searchResults))
+				self.searchList.selection_clear(0, tk.END)
 
 		self.root.after(UPDATE_FREQUENCY, self.update)
 
@@ -368,8 +380,5 @@ root.maxsize(width=WINWIDTH, height=WINHEIGHT)
 
 app = MovieApp(root)
 root.after(UPDATE_FREQUENCY, app.update)
-
-while True:
-	root.update_idletasks()
-	root.update()
+root.mainloop()
 	
