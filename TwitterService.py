@@ -1,4 +1,5 @@
 from DataService import Mongo
+import pymongo
 import tweepy
 import time
 
@@ -8,7 +9,8 @@ import time
 class Tweepy(object):
 
     @classmethod
-    def __init__(self):
+    def __init__(self, mongo):
+        self.mongo = mongo
         # create Twitter Apps: https://apps.twitter.com/
         consumer_key = ""
         consumer_secret = ""
@@ -198,11 +200,12 @@ class Tweepy(object):
             extracted_users.append([following.screen_name, following.name])
             # print("[Twitter] Friend's screen_name: " + following.screen_name)
 
-        # unit test for get_suggested_categories(screen_name)
-        categories = self.get_suggested_categories(screen_name)
-        profile["suggested_categories"] = categories
-        # for category in categories:
-        #     print("[Twitter] Suggested category: " + category)
+        # Abandoned, the suggestions are too general
+        # # unit test for get_suggested_categories(screen_name)
+        # categories = self.get_suggested_categories(screen_name)
+        # profile["suggested_categories"] = categories
+        # # for category in categories:
+        # #     print("[Twitter] Suggested category: " + category)
 
         # # unit test for get_suggested_users(screen_name)
         # users = self.get_suggested_users(screen_name, "Television")
@@ -213,15 +216,16 @@ class Tweepy(object):
         profile["extracted_tweets"] = extracted_tweets
         profile["extracted_users"] = extracted_users
 
-        mongo = Mongo("movieRecommend")
         print("[Twitter] Inserting user profile into database...")
-        mongo.db["user_profiles"].insert_one(profile)
+        self.mongo.db["user_profiles"].insert_one(profile)
+        self.mongo.db["user_profiles"].create_index([("screen_name", pymongo.ASCENDING)])
+        print("[Twitter] Created index for screen_name in user_profiles")
         print("[Twitter] Extraction done (%0.2fs)." % (time.time() - startTime))
         return profile
 
 
 def main():
-    twitter = Tweepy()
+    twitter = Tweepy(Mongo("movieRecommend"))
     twitter.get_rate_limit()
     # twitter.extract_profile("LeoDiCaprio")
     # twitter.extract_profile("BrunoMars")

@@ -26,16 +26,17 @@ def parse(mongo):
     mongo.db["movie"].create_index([("mid", pymongo.ASCENDING)])
     print("[movieLensParser] Created index for mid in movie")
     mongo.db["movie"].create_index([("title", pymongo.ASCENDING)])
-    print("[movieLensParser] Created title for mid in movie")
+    print("[movieLensParser] Created index for title in movie")
 
     # Add movie titles into database.
     # runtime: (3.15s)
     movieLensMovies.parse(mongo)
 
-    # Add movie genres into database.
-    # runtime: (4.11s)
-    movieLensGenres.parse(mongo)
-    
+    # not needed anymore, retrieved complete info from IMDB now
+    # # Add movie genres into database.
+    # # runtime: (4.11s)
+    # movieLensGenres.parse(mongo)
+
     # Add tags into database.
     # runtime: (0.06s)
     movieLensTags.parse(mongo)

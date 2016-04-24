@@ -102,7 +102,7 @@ class MovieRecommend(object):
         profile = self.mongo.db["user_profiles"].find_one({"screen_name": screen_name})
         if profile is None:
             print("[MovieRecommend] Profile not found in database.")
-            twitter = Tweepy()
+            twitter = Tweepy(self.mongo)
             profile = twitter.extract_profile(screen_name)
 
         print("[MovieRecommend] Profile retrieved.")
@@ -149,6 +149,7 @@ class MovieRecommend(object):
                 else:
                     movies_score[mid] += score
 
+        print("[MovieRecommend] Found " + str(len(movies_score)) + " candidate movies.")
         # put all candidates to compete, gain top-k
         recommend = self.gain_top_k(movies_score, 20)
         # self.print_recommend(recommend)
@@ -504,10 +505,12 @@ def main():
     # most_similar_movies = recommend.recommend_movies_for_movie(movie_id)
     # recommend.print_recommend(most_similar_movies)
 
-    # unit test, input: user screen_name "BrunoMars"
     print("[MovieRecommend] ***** Unit test for recommend_movies_for_twitter() *****")
     # user_screen_name = "BrunoMars"
-    user_screen_name = "LeoDiCaprio"
+    # user_screen_name = "LeoDiCaprio"
+    # user_screen_name = "BarackObama"
+    # user_screen_name = "sundarpichai"
+    user_screen_name = "BillGates"
     recommends = recommend.recommend_movies_for_twitter(user_screen_name)
     recommend.print_recommend(recommends)
 
