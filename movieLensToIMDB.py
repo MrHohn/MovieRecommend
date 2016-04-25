@@ -7,6 +7,7 @@ import omdb
 # db name: movieRecommend
 # collection name: movie
 # Adds fields to collection:
+#       - title_imdb (the short one)
 #       - year
 #       - country
 #       - language
@@ -25,7 +26,7 @@ import omdb
 
 def retrieve(mongo):
 
-    progressInterval = 100    # How often should we print a progress report to the console?
+    progressInterval = 100     # How often should we print a progress report to the console?
     progressTotal = 34208      # Approximate number of total lines in the file.
     bulkSize = 100             # How many documents should we store in memory before inserting them into the database in bulk?
     # List of documents that will be given to the database to be inserted to the collection in bulk.
@@ -33,7 +34,7 @@ def retrieve(mongo):
     count = 0
     skipCount = 0
 
-    print("[movieLensToIMDB] Starting Parse of movies.csv")
+    print("[movieLensToIMDB] Starting retrieve of movie info from IMDB...")
     startTime = time.time()
 
     # save all data in dict

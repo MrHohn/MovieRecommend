@@ -17,11 +17,11 @@ class TextAnalytics(object):
 
     @classmethod
     def __init__(self, mongo):
-        mongo = mongo
-        anewDoc = mongo.db["anew"].find_one({"type": "all"})
+        db = mongo.client["movieRecommend"]
+        anewDoc = db["anew"].find_one({"type": "all"})
         if anewDoc is None:
-            anewParser.parse(mongo)
-            anewDoc = mongo.db["anew"].find_one({"type": "all"})            
+            print("[Sentiment] ANEW list retrieve failed.")
+            return
         self.anewDict = anewDoc["dict"]
         print("[Sentiment] ANEW list retrieved.")
         self.textapi = textapi.Client("YOUR_APP_ID", "YOUR_APP_KEY")

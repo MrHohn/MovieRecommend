@@ -11,6 +11,7 @@ class Tweepy(object):
     @classmethod
     def __init__(self, mongo):
         self.mongo = mongo
+        self.db = mongo.client["movieRecommend"]
         # create Twitter Apps: https://apps.twitter.com/
         consumer_key = ""
         consumer_secret = ""
@@ -217,8 +218,8 @@ class Tweepy(object):
         profile["extracted_users"] = extracted_users
 
         print("[Twitter] Inserting user profile into database...")
-        self.mongo.db["user_profiles"].insert_one(profile)
-        self.mongo.db["user_profiles"].create_index([("screen_name", pymongo.ASCENDING)])
+        self.db["user_profiles"].insert_one(profile)
+        self.db["user_profiles"].create_index([("screen_name", pymongo.ASCENDING)])
         print("[Twitter] Created index for screen_name in user_profiles")
         print("[Twitter] Extraction done (%0.2fs)." % (time.time() - startTime))
         return profile
