@@ -65,29 +65,46 @@ class MovieApp:
 		self.reset_screen()
 		self.backFunction = self.username_screen
 
+		PAD = 75
+
 		centerframe = tk.Frame(self.mainframe)
 		centerframe.place(anchor='c', relx=.5, rely=.5)
 		centerframe.configure(background=BGCOLOR)
 
-		# Enter Twitter Username
-		entryframe = tk.Frame(centerframe)
-		entryframe.configure(background=BGCOLOR)
-		entryframe.pack()
-
-		label = tk.Label(entryframe, text="Twitter Username: ")
+		label = tk.Label(centerframe, text="Recommendation Mode:", font=FONT_H1, pady=32)
 		label.configure(background=BGCOLOR)
-		label.pack(side=tk.LEFT)
+		label.grid(row=0, column=0, columnspan=2)
 
-		self.usernameEntry = tk.Entry(entryframe)
-		self.usernameEntry.pack(side=tk.RIGHT)
+		label = tk.Label(centerframe, text="Twitter Account", font=FONT_H2)
+		label.configure(background=BGCOLOR)
+		label.grid(row=1, column=0, padx=(0,PAD))
+
+		label = tk.Label(centerframe, text="Watch History", font=FONT_H2)
+		label.configure(background=BGCOLOR)
+		label.grid(row=1, column=1)
+
+		label = tk.Label(centerframe, text="Username:")
+		label.configure(background=BGCOLOR)
+		label.grid(row=3, column=0, pady=(20,0), padx=(0,PAD))
+
+		self.usernameEntry = tk.Entry(centerframe)
+		self.usernameEntry.grid(row=4, column=0, padx=(0,PAD))
 
 		# Twitter Recommend Button
-		button = tk.Button(centerframe, text="Recommend!", command=partial(self.process_twitter_recommendation, self.usernameEntry.get()))
-		button.pack()
+		image = Image.open("img/twitterIcon.gif")
+		resized = image.resize((150, 150), Image.ANTIALIAS)
+		art = ImageTk.PhotoImage(resized)
+		button = tk.Button(centerframe, image=art, border=4, command=partial(self.process_twitter_recommendation, self.usernameEntry.get()))
+		button.image = art
+		button.grid(row=2, column=0, padx=(0,PAD))
 
 		# Movie History Button
-		hbutton = tk.Button(centerframe, text="Movie History", command=self.movie_search_screen)
-		hbutton.pack()
+		image = Image.open("img/historyIcon.gif")
+		resized = image.resize((150, 150), Image.ANTIALIAS)
+		art = ImageTk.PhotoImage(resized)
+		hbutton = tk.Button(centerframe, image=art, border=4, command=self.movie_search_screen)
+		hbutton.image = art
+		hbutton.grid(row=2, column=1)
 
 
 	#
