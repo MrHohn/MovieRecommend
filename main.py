@@ -5,8 +5,10 @@ import threading
 import urllib.request
 import tkinter as tk
 import DataService
+import imdbUtil
 from PIL import Image, ImageTk
 from functools import partial
+from tkinter import filedialog
 
 BGCOLOR = 'white'
 TWICOLOR = '#4099FF'
@@ -27,7 +29,7 @@ class MovieApp:
 		self.lastRecommend = [] # Last set of recommended titles, used for restoring the recommendation screen
 		self.historyList = set()   # Used for the movie history search screen. Stores the user's current movie history.
 		self.historyVar = tk.StringVar(value=tuple(self.historyList))
-		self.searchResults = []
+		self.searchResults = set()
 		self.searchVar = tk.StringVar(value=tuple(self.searchResults))
 		self.searchTimer = 0
 		self.lastSearchContent = "-"
@@ -56,6 +58,9 @@ class MovieApp:
 		self.recommendations_screen(recommendations)		
 
 
+	#
+	# ========================================= Title Screen ===========================================
+	#
 	def username_screen(self):
 		self.reset_screen()
 		self.backFunction = self.username_screen
@@ -85,6 +90,9 @@ class MovieApp:
 		hbutton.pack()
 
 
+	#
+	# ========================================= Movie Synopsis Screen ===========================================
+	#
 	def movie_synopsis_screen(self, title):
 		self.reset_screen()
 		WIDTH = 300
@@ -100,7 +108,7 @@ class MovieApp:
 		synopframe.configure(background=BGCOLOR)
 		synopframe.place(anchor='c', relx=.5, rely=.2)
 
-		titleLabel = tk.Label(synopframe, text=self.simpleTitle(title), justify=tk.LEFT, font=FONT_H1, wraplength=WINWIDTH-WIDTH-PAD*2-100)
+		titleLabel = tk.Label(synopframe, text=imdbUtil.simpleTitle(title), justify=tk.LEFT, font=FONT_H1, wraplength=WINWIDTH-WIDTH-PAD*2-100)
 		titleLabel.configure(background=BGCOLOR)
 		titleLabel.grid(row=0, column=0, sticky="W")
 
@@ -138,7 +146,6 @@ class MovieApp:
 		thr = threading.Thread(target=self.download_coverart, args=(coverart, title, WIDTH, HEIGHT))
 		thr.start()
 
-
 	def movie_synopsis_information(self, title, ratingLabelVar, yearLabelVar, descLabelVar):
 		response = self.omdbResponse(title)
 		result = json.loads(response.text)
@@ -166,6 +173,9 @@ class MovieApp:
 		self.recommendations_screen(self.lastRecommend)
 
 
+	#
+	# ========================================= Search and History Screen ===========================================
+	#
 	def movie_search_screen(self):
 		self.reset_screen()
 		WIDTH = 300
@@ -183,19 +193,23 @@ class MovieApp:
 		label.grid(row=0, column=0, sticky='W')
 
 		self.searchBar = tk.Entry(searchframe)
-		self.searchBar.grid(row=1, column=0, sticky=('E','W'), pady=(0,15))
+		self.searchBar.grid(row=1, column=0, sticky=('E','W'), pady=(0,15), columnspan=2)
 
 		self.searchList = tk.Listbox(searchframe, listvariable=self.searchVar, height=13, width=55, selectmode=tk.EXTENDED)
-		self.searchList.grid(row=2, column=0, sticky=('E', 'W'))
+		self.searchList.grid(row=2, column=0, sticky=('N','S', 'E', 'W'))
+
+		scrollSearch = tk.Scrollbar(searchframe, orient=tk.VERTICAL, command=self.searchList.yview)
+		scrollSearch.grid(row=2, column=1, sticky=('N','S'))
+		self.searchList['yscrollcommand'] = scrollSearch.set
 
 		addButton = tk.Button(searchframe, text="Add Movie", command=self.add_to_history)
-		addButton.grid(row=3, column=0, sticky=('E','W'), pady=(0,35))
+		addButton.grid(row=3, column=0, sticky=('E','W'), pady=(0,35), columnspan=2)
 
 		recommendButton = tk.Button(searchframe, text="Recommend!", command=self.process_movie_history_recommendation)
-		recommendButton.grid(row=4, column=0, sticky=('E','W'))
+		recommendButton.grid(row=4, column=0, sticky=('E','W'), columnspan=2)
 
 		returnButton = tk.Button(searchframe, text="Go Back", command=self.username_screen)
-		returnButton.grid(row=5, column=0, sticky=('E','W'))
+		returnButton.grid(row=5, column=0, sticky=('E','W'), columnspan=2)
 
 		# Movie History List
 		sideframe = tk.Frame(self.mainframe, width=WIDTH, height=HEIGHT, padx=PAD)
@@ -229,11 +243,26 @@ class MovieApp:
 		self.historyVar.set(tuple(self.historyList))
 
 	def save_history(self):
-		print("todo")
+		f = filedialog.asksaveasfile(mode='w', defaultextension='.txt', filetypes=[("Text file", ".txt")])
+		if f is None:
+			return
+		for movie in self.historyList:
+			f.write(movie+"\n")
+		f.close()
 
 	def load_history(self):
-		print("todo")
+		f = filedialog.askopenfile(mode='r', defaultextension='.txt', filetypes=[("Text file", ".txt")])
+		if f is None:
+			return
+		self.historyList.clear()
+		for line in f:
+			self.historyList.add(line)
+		self.historyVar.set(tuple(self.historyList))
+		f.close()
 
+	#
+	# ========================================= Recommendation Screen ===========================================
+	#
 	def recommendations_screen(self, titles):
 		self.reset_screen()
 		self.lastRecommend = titles
@@ -258,7 +287,7 @@ class MovieApp:
 		button = tk.Button(self.mainframe, text="Go Back", command=self.backFunction)
 		button.place(anchor='c', relx=.5, rely=.9)
 
-
+	# A frame widget containing an image of the movie's cover art, as well as the title of the movie
 	def movie_frame(self, frame, title, numTitles):
 		WIDTH = int(700/numTitles)
 		HEIGHT = 250
@@ -287,6 +316,10 @@ class MovieApp:
 		thr.start()
 
 
+	#
+	# ========================================= Other Functions ===========================================
+	#
+
 	# Main update loop for timing and such
 	def update(self):
 		# Handle auto-complete for the search form
@@ -302,20 +335,26 @@ class MovieApp:
 				self.lastSearchContent = self.searchBar.get()
 				self.searchResults = []
 				results = self.mongo.db["movies"].find({
-						"title":{"$regex":"^"+self.searchBar.get(), "$options":"i"}
-					}).limit(15).sort("imdbtitle", 1)
+						"imdbtitle":{"$regex":"^"+self.searchBar.get(), "$options":"i"}
+					}).limit(30).sort("imdbtitle", 1)
 				for result in results:
 					self.searchResults.append(result["imdbtitle"])
+				results = self.mongo.db["movies"].find({
+						"title":{"$regex":self.searchBar.get(), "$options":"i"}
+					}).limit(30).sort("imdbtitle", 1)
+				for result in results:
+					self.searchResults.append(result["imdbtitle"])
+				self.searchResults = self.prefixOrder(self.searchResults, self.searchBar.get())
 				self.searchVar.set(tuple(self.searchResults))
 				self.searchList.selection_clear(0, tk.END)
 
 		self.root.after(UPDATE_FREQUENCY, self.update)
 
-
+	# Find and download a coverart image from IMDB for the given movie, and attach the image to a label widget.
 	def download_coverart(self, label, title, width, height):
 		response = -1
 		foundImage = False
-		localpath = "img/"+self.safeFileString(self.simpleTitle(title))+".jpg"
+		localpath = "img/"+self.safeFileString(imdbUtil.simpleTitle(title))+".jpg"
 
 		if os.path.isfile(localpath):
 			foundImage = True #Cover art exists locally (we've downloaded it on a previous run). Use the local copy.
@@ -340,22 +379,49 @@ class MovieApp:
 			label.configure(image=art)
 			label.image=art
 
+	# Get extended IMDB data for a specific movie from OMDB, rather than our local database (cover art, etc).
 	def omdbResponse(self, title):
 		if "(" in title:
 			titleYear = title[title.index("(")+1:title.index(")")]
-			return requests.get("http://www.omdbapi.com/?t="+self.simpleTitle(title).replace(" ","+")+"&y="+titleYear+"&r=json")
+			return requests.get("http://www.omdbapi.com/?t="+imdbUtil.simpleTitle(title).replace(" ","+")+"&y="+titleYear+"&r=json")
 		else:
-			return requests.get("http://www.omdbapi.com/?t="+self.simpleTitle(title).replace(" ","+")+"&r=json")		
+			return requests.get("http://www.omdbapi.com/?t="+imdbUtil.simpleTitle(title).replace(" ","+")+"&r=json")		
 
+	# Remove characters from a string that could be problematic as part of a file name.
 	def safeFileString(self, filename):
 		keepcharacters = (' ','.','_')
 		return "".join(c for c in filename if c.isalnum() or c in keepcharacters).rstrip()
 
-	def simpleTitle(self, title):
-		if "(" in title:
-			return title[:title.index("(")-1]
-		return title
+	# Order elements in list by relevance to a prefix.
+	# IE: If prefix was "hello":
+	#			Strings that start with "hello" are priority 1
+	#			Remaining unmatched strings that start with "hell" are priority 2
+	#			Remaining unmatched strings that start with "hel" are priority 3
+	#			etc...
+	def prefixOrder(self, listToSort, prefix):
+		sortedElems = sorted(list(set(listToSort)))
+		orderedList = []
 
+		for prefixInd in reversed(range(len(prefix)+1)):
+			if sortedElems is None:
+				break
+			remainingElems = list(sortedElems)
+			preMatch = prefix[:prefixInd]
+			for item in remainingElems:
+				if self.cleanForSearch(item).startswith(self.cleanForSearch(preMatch)):
+					sortedElems.remove(item)
+					orderedList.append(item)
+
+		return orderedList
+
+	def cleanForSearch(self, string):
+		lstr = string.lower()
+		if lstr.startswith("the "):
+			return lstr[4:]
+		else:
+			return lstr
+
+	# Reset back to a blank screen (containing just the header logo)
 	def reset_screen(self):
 		self.mainframe.destroy()
 		self.mainframe = tk.Frame(root)
