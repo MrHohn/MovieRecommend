@@ -17,6 +17,9 @@ WINHEIGHT = 600
 AUTOCOMPLETE_DELAY = 5
 UPDATE_FREQUENCY = 100 #milliseconds
 
+MOVIE_MODE = 0
+TAG_MODE = 1
+
 FONT_H1 = ("Helvetica", 18, "bold")
 FONT_H2 = ("Helvetica", 12, "bold")
 
@@ -32,6 +35,7 @@ class MovieApp:
 		self.searchResults = set()
 		self.searchVar = tk.StringVar(value=tuple(self.searchResults))
 		self.searchTimer = 0
+		self.searchMode = MOVIE_MODE
 		self.lastSearchContent = "-"
 		self.lastSearchUpdate = "-"
 		self.backFunction = self.username_screen
@@ -55,7 +59,17 @@ class MovieApp:
 		recommendations.append("My Neighbor Totoro (1988)")
 		recommendations.append("The Matrix (1999)")
 		recommendations.append("Star Wars (1977)")
-		self.recommendations_screen(recommendations)		
+		self.recommendations_screen(recommendations)	
+
+	def process_tag_recommendation(self):
+		#[TODO] Test list
+		recommendations = list()
+		recommendations.append("Toy Story (1995)")
+		recommendations.append("Harry Potter and the Sorcerer's Stone (2001)")
+		recommendations.append("My Neighbor Totoro (1988)")
+		recommendations.append("The Matrix (1999)")
+		recommendations.append("Star Wars (1977)")
+		self.recommendations_screen(recommendations)	
 
 
 	#
@@ -65,30 +79,41 @@ class MovieApp:
 		self.reset_screen()
 		self.backFunction = self.username_screen
 
-		PAD = 75
+		self.lastSearchContent += "-"
+		self.lastSearchUpdate += "-"
+		self.historyList = set()
+		self.historyVar.set(tuple(self.historyList))
+		self.searchResults = set()
+		self.searchVar.set(tuple(self.searchResults))
+
+		PAD = 50
 
 		centerframe = tk.Frame(self.mainframe)
-		centerframe.place(anchor='c', relx=.5, rely=.5)
+		centerframe.place(anchor='c', relx=.5, rely=.6)
 		centerframe.configure(background=BGCOLOR)
 
-		label = tk.Label(centerframe, text="Recommendation Mode:", font=FONT_H1, pady=32)
+		label = tk.Label(self.mainframe, text="Recommendation Mode:", font=FONT_H1, pady=32)
 		label.configure(background=BGCOLOR)
-		label.grid(row=0, column=0, columnspan=2)
+		label.place(anchor='c', relx=.5, rely=.3)
 
 		label = tk.Label(centerframe, text="Twitter Account", font=FONT_H2)
 		label.configure(background=BGCOLOR)
-		label.grid(row=1, column=0, padx=(0,PAD))
+		label.grid(row=0, column=0, padx=(0,PAD))
 
 		label = tk.Label(centerframe, text="Watch History", font=FONT_H2)
 		label.configure(background=BGCOLOR)
-		label.grid(row=1, column=1)
+		label.grid(row=0, column=1, padx=(0,PAD))
+
+		label = tk.Label(centerframe, text="Tags/Genres", font=FONT_H2)
+		label.configure(background=BGCOLOR)
+		label.grid(row=0, column=2)
 
 		label = tk.Label(centerframe, text="Username:")
 		label.configure(background=BGCOLOR)
-		label.grid(row=3, column=0, pady=(20,0), padx=(0,PAD))
+		label.grid(row=2, column=0, pady=(20,0), padx=(0,PAD))
 
 		self.usernameEntry = tk.Entry(centerframe)
-		self.usernameEntry.grid(row=4, column=0, padx=(0,PAD))
+		self.usernameEntry.grid(row=3, column=0, padx=(0,PAD))
 
 		# Twitter Recommend Button
 		image = Image.open("img/twitterIcon.gif")
@@ -96,15 +121,31 @@ class MovieApp:
 		art = ImageTk.PhotoImage(resized)
 		button = tk.Button(centerframe, image=art, border=4, command=partial(self.process_twitter_recommendation, self.usernameEntry.get()))
 		button.image = art
-		button.grid(row=2, column=0, padx=(0,PAD))
+		button.grid(row=1, column=0, padx=(0,PAD))
 
 		# Movie History Button
 		image = Image.open("img/historyIcon.gif")
 		resized = image.resize((150, 150), Image.ANTIALIAS)
 		art = ImageTk.PhotoImage(resized)
-		hbutton = tk.Button(centerframe, image=art, border=4, command=self.movie_search_screen)
+		hbutton = tk.Button(centerframe, image=art, border=4, command=self.init_movie_search)
 		hbutton.image = art
-		hbutton.grid(row=2, column=1)
+		hbutton.grid(row=1, column=1, padx=(0,PAD))
+
+		# Tag Search Button
+		image = Image.open("img/tagIcon.gif")
+		resized = image.resize((150, 150), Image.ANTIALIAS)
+		art = ImageTk.PhotoImage(resized)
+		tbutton = tk.Button(centerframe, image=art, border=4, command=self.init_tag_search)
+		tbutton.image = art
+		tbutton.grid(row=1, column=2)
+
+	def init_movie_search(self):
+		self.searchMode = MOVIE_MODE
+		self.search_screen()
+
+	def init_tag_search(self):
+		self.searchMode = TAG_MODE
+		self.search_screen()
 
 
 	#
@@ -193,19 +234,28 @@ class MovieApp:
 	#
 	# ========================================= Search and History Screen ===========================================
 	#
-	def movie_search_screen(self):
+	def search_screen(self):
 		self.reset_screen()
 		WIDTH = 300
 		HEIGHT = 400
 		PAD = 10
-		self.backFunction = self.movie_search_screen
+		self.backFunction = self.search_screen
+
+		objectName = ""
+		recommendFunction = None
+		if self.searchMode == MOVIE_MODE:
+			objectName = "Movie"
+			recommendFunction = self.process_movie_history_recommendation
+		elif self.searchMode == TAG_MODE:
+			objectName = "Tag"
+			recommendFunction = self.process_tag_recommendation
 
 		# Search Area
 		searchframe = tk.Frame(self.mainframe, width=WINWIDTH-WIDTH-100, height=HEIGHT, padx=PAD)
 		searchframe.configure(background=BGCOLOR)
 		searchframe.place(anchor='w', relx=0.05, rely=.645)
 
-		label = tk.Label(searchframe, text="Movie Search:")
+		label = tk.Label(searchframe, text=objectName+" Search:")
 		label.configure(background=BGCOLOR)
 		label.grid(row=0, column=0, sticky='W')
 
@@ -219,10 +269,10 @@ class MovieApp:
 		scrollSearch.grid(row=2, column=1, sticky=('N','S'))
 		self.searchList['yscrollcommand'] = scrollSearch.set
 
-		addButton = tk.Button(searchframe, text="Add Movie", command=self.add_to_history)
+		addButton = tk.Button(searchframe, text="Add "+objectName, command=self.add_to_history)
 		addButton.grid(row=3, column=0, sticky=('E','W'), pady=(0,35), columnspan=2)
 
-		recommendButton = tk.Button(searchframe, text="Recommend!", command=self.process_movie_history_recommendation)
+		recommendButton = tk.Button(searchframe, text="Recommend!", command=recommendFunction)
 		recommendButton.grid(row=4, column=0, sticky=('E','W'), columnspan=2)
 
 		returnButton = tk.Button(searchframe, text="Go Back", command=self.username_screen)
@@ -260,7 +310,7 @@ class MovieApp:
 		self.historyVar.set(tuple(self.historyList))
 
 	def save_history(self):
-		f = filedialog.asksaveasfile(mode='w', defaultextension='.txt', filetypes=[("Text file", ".txt")])
+		f = filedialog.asksaveasfile(mode='w', filetypes=[self.get_filetype()], defaultextension=self.get_filetype()[1])
 		if f is None:
 			return
 		for movie in self.historyList:
@@ -268,7 +318,7 @@ class MovieApp:
 		f.close()
 
 	def load_history(self):
-		f = filedialog.askopenfile(mode='r', defaultextension='.txt', filetypes=[("Text file", ".txt")])
+		f = filedialog.askopenfile(mode='r', filetypes=[self.get_filetype()], defaultextension=self.get_filetype()[1])
 		if f is None:
 			return
 		self.historyList.clear()
@@ -276,6 +326,13 @@ class MovieApp:
 			self.historyList.add(line)
 		self.historyVar.set(tuple(self.historyList))
 		f.close()
+
+	def get_filetype(self):
+		if self.searchMode == MOVIE_MODE:
+			return ("Movie List", ".mvl")
+		elif self.searchMode == TAG_MODE:
+			return ("Tag List", ".tgl")
+		return None
 
 	#
 	# ========================================= Recommendation Screen ===========================================
@@ -351,16 +408,31 @@ class MovieApp:
 			else:
 				self.lastSearchContent = self.searchBar.get()
 				self.searchResults = []
-				results = self.mongo.db["movies"].find({
-						"imdbtitle":{"$regex":"^"+self.searchBar.get(), "$options":"i"}
-					}).limit(30).sort("imdbtitle", 1)
+
+				collectionName = ""
+				primFieldName = ""
+				secFieldName = ""
+				matchValue = self.searchBar.get()
+				if self.searchMode == MOVIE_MODE:
+					collectionName = "movies"
+					primFieldName = "imdbtitle"
+					secFieldName = "title"
+				elif self.searchMode == TAG_MODE:
+					collectionName = "keywords"
+					primFieldName = "keyword"
+					secFieldName = "keyword"
+					matchValue = matchValue.replace("-", "[-\s]").replace(" ", "[-\s]")
+
+				results = self.mongo.db[collectionName].find({
+						primFieldName:{"$regex":"^"+matchValue, "$options":"i"}
+					}).limit(30).sort(primFieldName, 1)
 				for result in results:
-					self.searchResults.append(result["imdbtitle"])
-				results = self.mongo.db["movies"].find({
-						"title":{"$regex":self.searchBar.get(), "$options":"i"}
-					}).limit(30).sort("imdbtitle", 1)
+					self.searchResults.append(result[primFieldName])
+				results = self.mongo.db[collectionName].find({
+						secFieldName:{"$regex":matchValue, "$options":"i"}
+					}).limit(30).sort(primFieldName, 1)
 				for result in results:
-					self.searchResults.append(result["imdbtitle"])
+					self.searchResults.append(result[primFieldName])
 				self.searchResults = self.prefixOrder(self.searchResults, self.searchBar.get())
 				self.searchVar.set(tuple(self.searchResults))
 				self.searchList.selection_clear(0, tk.END)
