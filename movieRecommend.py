@@ -24,8 +24,8 @@ class MovieRecommend(object):
             movie = self.db["movie"].find_one({"mid": mid})
             if "title_full" in movie:
                 titles.append(movie["title_full"])
-            else:
-                titles.append(movie["title"])
+            # else:
+            #     titles.append(movie["title"])
         return titles
 
     @classmethod

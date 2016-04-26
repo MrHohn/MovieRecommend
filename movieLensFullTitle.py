@@ -3,7 +3,7 @@ import pymongo
 import time
 
 # find the full imdb title from imdb database
-# with this approach, 773 (out of 34208) movies still failed to be assigned the full imdb title
+# with this approach, 872 (out of 34208) movies still failed to be assigned the full imdb title
 # mainly due to french or other languages
 
 def retrieve(mongo):
@@ -31,12 +31,18 @@ def retrieve(mongo):
 
         cur_mid = cur_movie["mid"]
         cur_title_imdb = cur_movie["title_imdb"]
-        imdb_movie = db_imdb["movies"].find_one({"title": cur_title_imdb})
-        if imdb_movie is not None:
-            bulkPayload.find({"mid": cur_mid}).update({"$set": {
-                "title_full": imdb_movie["imdbtitle"]
-                }})
-        else:
+        notFound = True
+        # handle the duplicated case
+        imdb_movie_cursor = db_imdb["movies"].find({"title": cur_title_imdb})
+        for imdb_movie in imdb_movie_cursor:
+            if imdb_movie["year"] == cur_movie["year"]:
+                bulkPayload.find({"mid": cur_mid}).update({"$set": {
+                    "title_full": imdb_movie["imdbtitle"]
+                    }})
+                notFound = False
+                break
+
+        if notFound:
             unfound += 1
 
         if count % bulkSize == 0:

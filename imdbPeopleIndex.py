@@ -3,6 +3,7 @@ import pymongo
 import time
 
 # build people to movies index from imdb database
+# runtime: 3-5 minutes
 
 def build(mongo):
 
@@ -70,6 +71,8 @@ def build(mongo):
     print("[imdbPeopleIndex] Found " + str(count) + " movies.")
     print("[imdbPeopleIndex] Found " + str(len(peoples_dict)) + " peoples.")
     print("[imdbPeopleIndex] Skipped " + str(skipCount) + " insertions.")
+    db_integration["peoples"].create_index([("people", pymongo.ASCENDING)])
+    print("[imdbPeopleIndex] Created index for people in peoples from integration database")
 
 
 def main():
