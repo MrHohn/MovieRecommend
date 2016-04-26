@@ -3,10 +3,11 @@ from pymongo import MongoClient
 class Mongo(object):
 
     @classmethod
-    def __init__(self, database):
+    def __init__(self, database=""):
         print("[mongo] Initializing database: [" + database + "]")
         self.client = MongoClient('localhost', 27017)
-        self.db = self.client[database]
+        if len(database) > 0:
+            self.db = self.client[database]
 
     @classmethod
     def get_attr(self, collection, attrKey, filter_dict = {}):

@@ -7,7 +7,6 @@ import omdb
 # db name: movieRecommend
 # collection name: movie
 # Adds fields to collection:
-#       - title_imdb (the short one)
 #       - year
 #       - country
 #       - language
@@ -23,6 +22,7 @@ import omdb
 #       - director
 #       - actors
 #       - writer
+#       - title_imdb
 
 def retrieve(mongo):
 
@@ -77,7 +77,8 @@ def retrieve(mongo):
             "genres": cur_genres, 
             "director": imdb_movie["director"], 
             "actors": cur_actors, 
-            "writer": imdb_movie["writer"]
+            "writer": imdb_movie["writer"],
+            "title_imdb": imdb_movie["title"]
             }})
 
         if count % bulkSize == 0:

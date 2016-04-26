@@ -19,13 +19,13 @@ class MovieRecommend(object):
 
     @classmethod
     def get_titles_by_mids(self, mids):
-        imdbids = self.get_imdbids_by_mids(mids)
         titles = []
-        db_imdb = self.mongo.client["imdb"]
-        for imdbid in imdbids:
-            movie = db_imdb["movies"].find_one({"id": imdbid})
-            if movie is not None:
-                titles.append(movie["imdbtitle"])
+        for mid in mids:
+            movie = self.db["movie"].find_one({"mid": mid})
+            if "title_full" in movie:
+                titles.append(movie["title_full"])
+            else:
+                titles.append(movie["title"])
         return titles
 
     @classmethod
@@ -564,46 +564,46 @@ def main():
     # recommends = recommend.recommend_movies_for_user(user_id)
     # recommend.print_recommend(recommends)
 
-    # unit test for recommend_movies_based_on_history()
-    print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_history() *****")
-    user_history = []
-    user_history.append("Toy Story (1995)")
-    user_history.append("Furious 7 (2015)")
-    user_history.append("Fifty Shades of Grey (2015)")
-    user_history.append("Big Hero 6 (2014)")
-    user_history.append("X-Men: Days of Future Past (2014)")
-    user_history.append("The Lego Movie (2014)")
-    recommends = recommend.recommend_movies_based_on_history(user_history)
-    recommend.print_recommend(recommends)
+    # # unit test for recommend_movies_based_on_history()
+    # print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_history() *****")
+    # user_history = []
+    # user_history.append("Toy Story (1995)")
+    # user_history.append("Furious 7 (2015)")
+    # user_history.append("Fifty Shades of Grey (2015)")
+    # user_history.append("Big Hero 6 (2014)")
+    # user_history.append("X-Men: Days of Future Past (2014)")
+    # user_history.append("The Lego Movie (2014)")
+    # recommends = recommend.recommend_movies_based_on_history(user_history)
+    # recommend.print_recommend(recommends)
 
     # # unit test, input tags:
     # # [28, 387, 599, 704, 794]
     # # ["adventure", "feel-good", "life", "new york city", "police"]
     # print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_tags() *****")
     # tags = [28, 387, 599, 704, 794]
-    # most_similar_movies = recommend.recommend_movies_based_on_tags(tags)
-    # recommend.print_recommend(most_similar_movies)
+    # recommends = recommend.recommend_movies_based_on_tags(tags)
+    # recommend.print_recommend(recommends)
     
-    # print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_tags() with tag contents *****")
+    # print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_tags() with tag contents input *****")
     # tags = ["adventure", "feel-good", "life", "new york city", "police"]
-    # most_similar_movies = recommend.recommend_movies_based_on_tags(tags, tagid=False)
-    # recommend.print_recommend(most_similar_movies)
+    # recommends = recommend.recommend_movies_based_on_tags(tags, tagid=False)
+    # recommend.print_recommend(recommends)
 
     # # unit test, input: Movie ID = 1 "Toy Story (1995)"
     # print("[MovieRecommend] ***** Unit test for recommend_movies_for_movie() *****")
     # movie_id = 1
-    # most_similar_movies = recommend.recommend_movies_for_movie(movie_id)
-    # recommend.print_recommend(most_similar_movies)
-
-    # print("[MovieRecommend] ***** Unit test for recommend_movies_for_twitter() *****")
-    # # user_screen_name = "BrunoMars"
-    # user_screen_name = "LeoDiCaprio"
-    # # user_screen_name = "BarackObama"
-    # # user_screen_name = "sundarpichai"
-    # # user_screen_name = "BillGates"
-    # recommends = recommend.recommend_movies_for_twitter(user_screen_name)
+    # recommends = recommend.recommend_movies_for_movie(movie_id)
     # recommend.print_recommend(recommends)
-    # # print(recommend.get_imdbids_by_mids(recommends))
+
+    print("[MovieRecommend] ***** Unit test for recommend_movies_for_twitter() *****")
+    user_screen_name = "BrunoMars"
+    # user_screen_name = "LeoDiCaprio"
+    # user_screen_name = "BarackObama"
+    # user_screen_name = "sundarpichai"
+    # user_screen_name = "BillGates"
+    recommends = recommend.recommend_movies_for_twitter(user_screen_name)
+    # recommend.print_recommend(recommends)
+    print(recommend.get_titles_by_mids(recommends))
 
 if __name__ == "__main__":
     main()
