@@ -130,6 +130,8 @@ class MovieRecommend(object):
             print("[MovieRecommend] Profile not found in database.")
             twitter = Tweepy(self.mongo)
             profile = twitter.extract_profile(screen_name)
+            if len(profile) == 0:
+                return []
 
         print("[MovieRecommend] Profile retrieved.")
         actors = self.get_actors_from_profile(profile)
@@ -601,6 +603,7 @@ def main():
     # user_screen_name = "BarackObama"
     # user_screen_name = "sundarpichai"
     # user_screen_name = "BillGates"
+    # user_screen_name = "jhsdfjak"
     recommends = recommend.recommend_movies_for_twitter(user_screen_name)
     # recommend.print_recommend(recommends)
     print(recommend.get_titles_by_mids(recommends))
