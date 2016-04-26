@@ -8,8 +8,7 @@
 #
 # Also see imdbIgnore at the bottom of this file.
 
-imdbKeywords =
-{
+imdbKeywords = {
 	#============================================ 0-9 =============================================
 	"18th-century":["18th century"],
 	"eighteenth-century":["18th century"],

@@ -60,6 +60,9 @@ def retrieve(mongo):
 
 def main():
     mongo = Mongo("movieRecommend")
+    db_imdb = mongo.client["imdb"]
+    db_imdb["movies"].create_index([("title", pymongo.ASCENDING)])
+    print("[movieLensFullTitle] Created index for title in movies")
     retrieve(mongo)
 
 if __name__ == "__main__":
