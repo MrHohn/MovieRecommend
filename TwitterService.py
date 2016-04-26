@@ -34,7 +34,11 @@ class Tweepy(object):
     def get_user_profile(self, screen_name):
         print("[Twitter] Getting user basic profile...")
         # Get the User object from twitter...
-        user = self.api.get_user(screen_name)
+        try:
+            user = self.api.get_user(screen_name)
+        except tweepy.error.TweepError as err:
+            print("[Tweepy] " + err.reason)
+            return {}
         profile = {}
         profile["screen_name"] = user.screen_name
         profile["name"] = user.name
@@ -153,6 +157,8 @@ class Tweepy(object):
 
         # unit test for get_user_profile(screen_name)
         profile = self.get_user_profile(screen_name)
+        if len(profile) == 0:
+            return {}
         # self.print_basic_profile(profile)
 
         extracted_tags = []
@@ -227,9 +233,10 @@ class Tweepy(object):
 
 def main():
     twitter = Tweepy(Mongo("movieRecommend"))
-    twitter.get_rate_limit()
+    # twitter.get_rate_limit()
     # twitter.extract_profile("LeoDiCaprio")
     # twitter.extract_profile("BrunoMars")
+    twitter.extract_profile("jhsdfjak")
     # cats = twitter.get_suggested_categories("BrunoMars")
     # cats = twitter.get_suggested_categories("LeoDiCaprio")
     # cats = twitter.get_suggested_categories("johnydepp007")

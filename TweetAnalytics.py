@@ -16,16 +16,18 @@ from nltk.util import ngrams
 class TextAnalytics(object):
 
     @classmethod
-    def __init__(self, mongo):
+    def __init__(self, mongo, anew=False, aylien=False):
         db = mongo.client["movieRecommend"]
-        anewDoc = db["anew"].find_one({"type": "all"})
-        if anewDoc is None:
-            print("[Sentiment] ANEW list retrieve failed.")
-            return
-        self.anewDict = anewDoc["dict"]
-        print("[Sentiment] ANEW list retrieved.")
-        self.textapi = textapi.Client("YOUR_APP_ID", "YOUR_APP_KEY")
-        print("[Aylien] Aylien client initialized.")
+        if anew:
+            anewDoc = db["anew"].find_one({"type": "all"})
+            if anewDoc is None:
+                print("[Sentiment] ANEW list retrieve failed.")
+                return
+            self.anewDict = anewDoc["dict"]
+            print("[Sentiment] ANEW list retrieved.")
+        if aylien:
+            self.textapi = textapi.Client("YOUR_APP_ID", "YOUR_APP_KEY")
+            print("[Aylien] Aylien client initialized.")
 
     @classmethod
     def gain_sentiment(self, sentence):
@@ -115,7 +117,7 @@ class TextAnalytics(object):
         return lower_words
 
 def main():
-    textAnalytics = TextAnalytics(Mongo("movieRecommend"))
+    textAnalytics = TextAnalytics(Mongo("movieRecommend"), anew=True, aylien=True)
     # sentence = "Congrats to @HCP_Nevada on their health care headliner win"
     # sentence = "b'I love you @iHeartRadio! I love you hooligans! love you Sriracha. I love you @LeoDiCaprio. Thinking of u @holyfield  https://t.co/iPoHf03G4R'"
     sentence = "The secret life of Walter Mitty is a fantastic movie"
