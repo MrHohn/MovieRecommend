@@ -2,6 +2,7 @@ from DataService import Mongo
 import pymongo
 import time
 from imdbMovieLensTags import imdbKeywords, imdbIgnore
+import imdbPeopleIndex
 
 def collect_from_keywords(client):
     db_imdb = client["imdb"]
@@ -30,7 +31,7 @@ def collect_from_keywords(client):
 
         cursor = db_imdb["movies"].find({"keywords": key})
         for cur_movie in cursor:
-            if cur_movie["imdbtitle"] in filter_movies:
+            if cur_movie["imdbtitle"] in filter_movies or "tv" in cur_movie:
                 continue
             for tag in imdbKeywords[key]:
                 if tag not in tags_to_movies:
@@ -187,6 +188,18 @@ def store_people_name_only(client):
 
     print("[keywordsCombine] Complete (%0.2fs)" % (time.time() - startTime))
 
+def count_movies_with_tags(client):
+    db_integration = client["integration"]
+    all_movies = set()
+    cursor = db_integration["integrated_tag"].find({})
+    for cur_tag in cursor:
+        # print(cur_tag["tag"])
+        if "movies" not in cur_tag:
+            continue
+        for movie in cur_tag["movies"]:
+            all_movies.add(movie)
+
+    print("[keywordsCombine] Totle tagged movie: " + str(len(all_movies)))
 
 def main():
     mongo = Mongo()
@@ -206,7 +219,11 @@ def main():
 
     fix_popularity(mongo.client) # 3 seconds
 
+    imdbPeopleIndex.build(mongo) # 3 minutes
+
     store_people_name_only(mongo.client) # 36 seconds
+
+    count_movies_with_tags(mongo.client)
 
 if __name__ == "__main__":
     main()

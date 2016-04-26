@@ -165,10 +165,10 @@ class MovieRecommend(object):
         actors = self.get_actors_from_profile(profile, integrated=True)
         tags = self.get_tags_from_profile(profile)
 
-        # # Combine actors and tags to recommend
-        # recommends = self.recommend_movies_combined(actors, tags)
-        # print("[MovieRecommend] Earned recommendations for Twitter.")
-        # return recommends
+        # Combine actors and tags to recommend
+        recommends = self.recommend_movies_combined_integrated(actors, tags)
+        print("[MovieRecommend] Earned recommendations for Twitter.")
+        return recommends
 
     @classmethod
     def recommend_movies_combined(self, actors, tags):
@@ -183,7 +183,7 @@ class MovieRecommend(object):
                 attrs = relevance_pair.split(",")
                 mid = int(attrs[0])
                 # consider also the frequency
-                relevance = float(attrs[1]) * (1 + math.log(tags[tag], 5))
+                relevance = float(attrs[1]) * (1 + math.log(tags[tag], 3))
                 score = self.weight_tf_idf(relevance, cur_popular, total_movies_num, 2)
                 if mid not in movies_score:
                     movies_score[mid] = score
@@ -198,8 +198,8 @@ class MovieRecommend(object):
             for cur_movie in cur_movies:
                 mid = cur_movie["mid"]
                 # consider also the frequency
-                relevance = 1 + math.log(actors[actor], 5)
-                score = self.weight_tf_idf(relevance, cur_popular, total_actors_num, 10)
+                relevance = 1 + math.log(actors[actor], 3)
+                score = self.weight_tf_idf(relevance, cur_popular, total_actors_num, 3)
                 if mid not in movies_score:
                     movies_score[mid] = score
                 else:
@@ -214,7 +214,44 @@ class MovieRecommend(object):
     @classmethod
     def recommend_movies_combined_integrated(self, actors, tags):
         movies_score = {}
-        return []
+
+        total_movies_num = 122418   # num of movies with tags (real)
+        for tag in tags.keys():
+            cur_tag = self.db_integration["integrated_tag"].find_one({"tag": tag})
+            cur_popularity = cur_tag["popularity"]
+            cur_movies = cur_tag["movies"]
+            cur_scores = cur_tag["scores"]
+            for pos in range(len(cur_movies)):
+                cur_movie_title = cur_movies[pos]
+                cur_movie_score = cur_scores[pos]
+                # consider also the frequency
+                relevance = cur_movie_score * (1 + math.log(tags[tag], 3))
+                score = self.weight_tf_idf(relevance, cur_popularity, total_movies_num, 2)
+                if cur_movie_title not in movies_score:
+                    movies_score[cur_movie_title] = score
+                else:
+                    movies_score[cur_movie_title] += score
+
+        total_actors_num = 3031430
+        for actor in actors.keys():
+            cur_actor = self.db_integration["peoples"].find_one({"people": actor})
+            cur_popularity = cur_actor["popularity"]
+            cur_movies = cur_actor["movies"]
+            for cur_movie in cur_movies:
+                cur_movie_title = cur_movie
+                # consider also the frequency
+                relevance = 1 + math.log(actors[actor], 3)
+                score = self.weight_tf_idf(relevance, cur_popularity, total_actors_num, 4)
+                if cur_movie_title not in movies_score:
+                    movies_score[cur_movie_title] = score
+                else:
+                    movies_score[cur_movie_title] += score
+
+        print("[MovieRecommend] Found " + str(len(movies_score)) + " candidate movies.")
+        # put all candidates to compete, gain top-k
+        recommend = self.gain_top_k(movies_score, 20)
+        # self.print_recommend(recommend)
+        return recommend
 
     # generate up to 10 movies recommendations given a movie id
     # directly using recommend_movies_based_on_tags()
@@ -649,6 +686,8 @@ def main():
     # user_screen_name = "BillGates"
     # user_screen_name = "jhsdfjak"
     recommends = recommend.recommend_movies_for_twitter_integrated(user_screen_name)
+    for recommend in recommends:
+        print(recommend.encode("utf8"))
 
 if __name__ == "__main__":
     main()

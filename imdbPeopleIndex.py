@@ -6,6 +6,7 @@ import time
 # runtime: 3-5 minutes
 
 def build(mongo):
+    db_imdb = mongo.client["imdb"]
 
     progressInterval = 1000
     progressTotal = 1251126
@@ -15,12 +16,15 @@ def build(mongo):
     startTime = time.time()
 
     peoples_dict = {}
-    cursor = mongo.db["movies"].find({}, no_cursor_timeout=True)
+    cursor = db_imdb["movies"].find({}, no_cursor_timeout=True)
     for cur_movie in cursor:
         count += 1
         if count % progressInterval == 0:
             print("[imdbPeopleIndex] %7d movies processed so far. (%d%%) (%0.2fs)" % (count, int(count * 100 / progressTotal), time.time() - startTime))
 
+        # skip the tv shows
+        if "tv" in cur_movie:
+            continue
         cur_title_imdb = cur_movie["imdbtitle"]
         if "crew" in cur_movie:
             for people in cur_movie["crew"]:
