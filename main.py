@@ -41,8 +41,10 @@ class MovieApp:
 		self.backFunction = self.username_screen
 		self.username_screen()
 
-	def process_twitter_recommendation(self, username):
+	def process_twitter_recommendation(self, usernameWidget):
 		#[TODO] Test list
+		username = usernameWidget.get()
+		print(username)
 		recommendations = list()
 		recommendations.append("Toy Story (1995)")
 		recommendations.append("Harry Potter and the Sorcerer's Stone (2001)")
@@ -119,7 +121,7 @@ class MovieApp:
 		image = Image.open("img/twitterIcon.gif")
 		resized = image.resize((150, 150), Image.ANTIALIAS)
 		art = ImageTk.PhotoImage(resized)
-		button = tk.Button(centerframe, image=art, border=4, command=partial(self.process_twitter_recommendation, self.usernameEntry.get()))
+		button = tk.Button(centerframe, image=art, border=4, command=partial(self.process_twitter_recommendation, self.usernameEntry))
 		button.image = art
 		button.grid(row=1, column=0, padx=(0,PAD))
 
@@ -452,7 +454,7 @@ class MovieApp:
 			# New cover art we haven't encountered before. Try to download it, if it exists.
 			response = self.omdbResponse(title)
 			result = json.loads(response.text)
-			if "Poster" in result:
+			if "Poster" in result and "http" in "Poster":
 				coverart = urllib.request.urlretrieve(result["Poster"], localpath)
 				foundImage = True
 
