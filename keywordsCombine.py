@@ -75,15 +75,16 @@ def collect_from_tags(client):
             score = float(attrs[1])
             # get the full imdb title
             relevant_movie = db_recommend["movie"].find_one({"mid": mid})
-            # some mid might not exist in movieLens database
+            # some mids might not exist in movieLens database
             if relevant_movie is None:
                 continue
-            if "title_full" in relevant_movie:
-                title = relevant_movie["title_full"]
-            else:
-                title = relevant_movie["title"]
+            # skip the movies with none-movie type or doesn't have full imdb title
+            if "title_full" not in relevant_movie or relevant_movie["type"] != "movie":
+                continue
+            title = relevant_movie["title_full"]
             movies_list.append(title)
             scores_list.append(score)
+
         db_integration["tags"].update_one({"tag": cur_content}, {"$set": {
             "movies": movies_list,
             "scores": scores_list
@@ -139,6 +140,31 @@ def combine(client):
 
     print("[keywordsCombine] Complete (%0.2fs)" % (time.time() - startTime))
 
+def fixPopularity(client):
+    # store all original popularities into integrated database
+    db_recommend = client["movieRecommend"]
+    db_integration = client["integration"]
+
+    count = 0
+    progressInterval = 50        # How often should we print a progress report to the console?
+    progressTotal = 1128         # Approximate number of total lines in the file.
+
+    print("[keywordsCombine] Starting collection of popularities...")
+    startTime = time.time()
+
+    cursor = db_recommend["tag"].find({})
+    for cur_tag in cursor:
+        count += 1
+        if count % progressInterval == 0:
+            print("[keywordsCombine] %3d tags processed so far. (%d%%) (%0.2fs)" % (count, int(count * 100 / progressTotal), time.time() - startTime))
+
+        cur_content = cur_tag["content"]
+        db_integration["integrated_tag"].update_one({"tag": cur_content}, {"$set": {
+            "popularity": cur_tag["popular"]
+            }}, True)
+
+    print("[keywordsCombine] Complete (%0.2fs)" % (time.time() - startTime))
+
 
 def main():
     mongo = Mongo()
@@ -150,6 +176,7 @@ def main():
     collect_from_keywords(mongo.client) # 15 seconds
     collect_from_tags(mongo.client) # 5 minutes
     combine(mongo.client) # 8 seconds
+    fixPopularity(mongo.client) # 3 seconds
 
 if __name__ == "__main__":
     main()
