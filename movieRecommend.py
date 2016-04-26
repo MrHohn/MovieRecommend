@@ -15,6 +15,7 @@ class MovieRecommend(object):
     def __init__(self, mongo):
         self.mongo = mongo
         self.db = mongo.client["movieRecommend"]
+        self.db_integration = mongo.client["integration"]
         self.textAnalytics = TextAnalytics(mongo)
 
     @classmethod
@@ -43,13 +44,19 @@ class MovieRecommend(object):
         return imdbids
 
     @classmethod
-    def get_actors_from_profile(self, profile):
+    def get_actors_from_profile(self, profile, integrated=False):
         # get all actors from database
         actors_pool = set()
-        cursor = self.db["actors_list"].find({})
-        for cur_actor in cursor:
-            cur_name = cur_actor["actor"]
-            actors_pool.add(cur_name)
+        if not integrated:
+            cursor = self.db["actors_list"].find({})
+            for cur_actor in cursor:
+                cur_name = cur_actor["actor"]
+                actors_pool.add(cur_name)
+        else:
+            cursor = self.db_integration["peoples_name_only"].find({})
+            for cur_doc in cursor:
+                for cur_name in cur_doc["names"]:
+                    actors_pool.add(cur_name)
         print("[MovieRecommend] Built up actors pool, size: " + str(len(actors_pool)))
 
         # gain all mentioned actors and the frequency
@@ -143,6 +150,27 @@ class MovieRecommend(object):
         return recommends
 
     @classmethod
+    def recommend_movies_for_twitter_integrated(self, screen_name):
+        print("[MovieRecommend] Target user screen_name: " + screen_name)
+
+        profile = self.db["user_profiles"].find_one({"screen_name": screen_name})
+        if profile is None:
+            print("[MovieRecommend] Profile not found in database.")
+            twitter = Tweepy(self.mongo)
+            profile = twitter.extract_profile(screen_name)
+            if len(profile) == 0:
+                return []
+
+        print("[MovieRecommend] Profile retrieved.")
+        actors = self.get_actors_from_profile(profile, integrated=True)
+        tags = self.get_tags_from_profile(profile)
+
+        # # Combine actors and tags to recommend
+        # recommends = self.recommend_movies_combined(actors, tags)
+        # print("[MovieRecommend] Earned recommendations for Twitter.")
+        # return recommends
+
+    @classmethod
     def recommend_movies_combined(self, actors, tags):
         movies_score = {}
 
@@ -182,6 +210,11 @@ class MovieRecommend(object):
         recommend = self.gain_top_k(movies_score, 20)
         # self.print_recommend(recommend)
         return recommend
+
+    @classmethod
+    def recommend_movies_combined_integrated(self, actors, tags):
+        movies_score = {}
+        return []
 
     # generate up to 10 movies recommendations given a movie id
     # directly using recommend_movies_based_on_tags()
@@ -597,16 +630,25 @@ def main():
     # recommends = recommend.recommend_movies_for_movie(movie_id)
     # recommend.print_recommend(recommends)
 
-    print("[MovieRecommend] ***** Unit test for recommend_movies_for_twitter() *****")
+    # print("[MovieRecommend] ***** Unit test for recommend_movies_for_twitter() *****")
+    # user_screen_name = "BrunoMars"
+    # # user_screen_name = "LeoDiCaprio"
+    # # user_screen_name = "BarackObama"
+    # # user_screen_name = "sundarpichai"
+    # # user_screen_name = "BillGates"
+    # # user_screen_name = "jhsdfjak"
+    # recommends = recommend.recommend_movies_for_twitter(user_screen_name)
+    # # recommend.print_recommend(recommends)
+    # print(recommend.get_titles_by_mids(recommends))
+
+    print("[MovieRecommend] ***** Unit test for recommend_movies_for_twitter_integrated() *****")
     user_screen_name = "BrunoMars"
     # user_screen_name = "LeoDiCaprio"
     # user_screen_name = "BarackObama"
     # user_screen_name = "sundarpichai"
     # user_screen_name = "BillGates"
     # user_screen_name = "jhsdfjak"
-    recommends = recommend.recommend_movies_for_twitter(user_screen_name)
-    # recommend.print_recommend(recommends)
-    print(recommend.get_titles_by_mids(recommends))
+    recommends = recommend.recommend_movies_for_twitter_integrated(user_screen_name)
 
 if __name__ == "__main__":
     main()

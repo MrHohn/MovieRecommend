@@ -140,7 +140,7 @@ def combine(client):
 
     print("[keywordsCombine] Complete (%0.2fs)" % (time.time() - startTime))
 
-def fixPopularity(client):
+def fix_popularity(client):
     # store all original popularities into integrated database
     db_recommend = client["movieRecommend"]
     db_integration = client["integration"]
@@ -165,6 +165,28 @@ def fixPopularity(client):
 
     print("[keywordsCombine] Complete (%0.2fs)" % (time.time() - startTime))
 
+# this functions batch and store all people names into database
+# mainly for spedding up the loading phase in Recommender
+def store_people_name_only(client):
+    print("[keywordsCombine] Starting collection of all names...")
+    startTime = time.time()
+
+    db_integration = client["integration"]
+    cursor = db_integration["peoples"].find({})
+    all_names = []
+    count = 0
+    for cur_people in cursor:
+        count += 1
+        all_names.append(cur_people["people"])
+        if count % 100000 == 0:
+            db_integration["peoples_name_only"].insert({"names": all_names})
+            all_names = []
+
+    if count % 100000 > 0:
+        db_integration["peoples_name_only"].insert({"names": all_names})
+
+    print("[keywordsCombine] Complete (%0.2fs)" % (time.time() - startTime))
+
 
 def main():
     mongo = Mongo()
@@ -174,9 +196,17 @@ def main():
     print("[keywordsCombine] Created index for keywords in movies")
 
     collect_from_keywords(mongo.client) # 15 seconds
+
     collect_from_tags(mongo.client) # 5 minutes
+
     combine(mongo.client) # 8 seconds
-    fixPopularity(mongo.client) # 3 seconds
+    db_integration = mongo.client["integration"]
+    db_integration["integrated_tag"].create_index([("tag", pymongo.ASCENDING)])
+    print("[keywordsCombine] Created index for tag in integrated_tag")
+
+    fix_popularity(mongo.client) # 3 seconds
+
+    store_people_name_only(mongo.client) # 36 seconds
 
 if __name__ == "__main__":
     main()
