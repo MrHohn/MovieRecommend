@@ -15,6 +15,8 @@ def collect_from_keywords(client):
     print("[keywordsCombine] Starting collection of keywords...")
     startTime = time.time()
 
+    all_keywords = set()
+
     tags_to_movies = {}
     for key in imdbKeywords.keys():
         count += 1
@@ -34,10 +36,15 @@ def collect_from_keywords(client):
             if cur_movie["imdbtitle"] in filter_movies or "tv" in cur_movie:
                 continue
             for tag in imdbKeywords[key]:
+                for keyword in cur_movie["keywords"]:
+                    all_keywords.add(keyword)
                 if tag not in tags_to_movies:
                     tags_to_movies[tag] = [cur_movie["imdbtitle"]]
                 else:
                     tags_to_movies[tag].append(cur_movie["imdbtitle"])
+
+    # total 129034 keywords found
+    print("[keywordsCombine] Total keywords: " + str(len(all_keywords)))
 
     for tag in tags_to_movies.keys():
         db_integration["keywords"].update_one({"keyword": tag}, {"$set": {
@@ -285,7 +292,7 @@ def main():
     db_imdb["movies"].create_index([("keywords", pymongo.ASCENDING)])
     print("[keywordsCombine] Created index for keywords in movies")
 
-    collect_from_keywords(mongo.client) # 15 seconds
+    collect_from_keywords(mongo.client) # 34 seconds
 
     collect_from_tags(mongo.client) # 5 minutes
 

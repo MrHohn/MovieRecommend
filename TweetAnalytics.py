@@ -26,6 +26,7 @@ class TextAnalytics(object):
             self.anewDict = anewDoc["dict"]
             print("[Sentiment] ANEW list retrieved.")
         if aylien:
+            # Aylien App: MovieRecommend_1
             self.textapi = textapi.Client("YOUR_APP_ID", "YOUR_APP_KEY")
             print("[Aylien] Aylien client initialized.")
 
@@ -105,7 +106,7 @@ class TextAnalytics(object):
         for word in (words + num_words):
             lower_words.append(word.lower())
 
-        # also generate 2-4 grams words
+        # also generate 2-3 grams words
         for i in range(2, 4, 1):
             grams = ngrams(words, i)
             for gram in grams:
@@ -115,6 +116,45 @@ class TextAnalytics(object):
                 lower_words.append(newgram.lower())
 
         return lower_words
+
+    @classmethod
+    def get_words_from_tweet(self, tweet):
+        # original tweet
+        # print(tweet)
+
+        # removed signs
+        # replace all invalid signs
+        # @ and # would be filtered out later
+        # keep / , = and : to filter out the URL
+        tweet = re.sub("[-!?,(){}|+_$~*%;><.]", " ", tweet)
+        # tweet = re.sub("\. ", " ", tweet)
+        tweet = re.sub("[&]", "and", tweet)
+        # print(tweet)
+
+        # gain original words
+        words = re.split(" ", tweet)
+        # print(words)
+
+        # removed invalid words
+        res = []
+        copyspace = []
+        for word in words:
+            if len(word) == 0 or word.startswith("@") or word.startswith("#") or word.startswith("http") or "=" in word:
+                continue
+            res.append(word.lower())
+            copyspace.append(word.lower())
+
+        # also generate 2-3 grams words
+        for i in range(2, 4, 1):
+            grams = ngrams(copyspace, i)
+            for gram in grams:
+                newgram = gram[0]
+                for j in range(len(gram) - 1):
+                    newgram += " " + gram[j + 1]
+                res.append(newgram)
+
+        return res
+
 
 def main():
     textAnalytics = TextAnalytics(Mongo("movieRecommend"), anew=True, aylien=True)
@@ -130,6 +170,13 @@ def main():
     # hashtag = "9/11"
     # hashtag = "1980sWhereAreYou"    
     print(textAnalytics.get_words_from_hashtag(hashtag))
+
+    tweet = "DAMN! Glo-Zell To da No! Why I gotta be 4-2? HAHAHA! http://www.youtube.com/watch?v=aQoDEZI4ces  Watch Glozell Snap on me AGAIN! #Damn"
+    # tweet = "@Ellichter if you make a left on Boo Boo lane youll end up @ the Ca Ca Mart. Thats where they sell a wide variety of Doo Doo Spread.. #ill"
+    # tweet = "This year for me is all about Touring and playing shows and i believe im going Everywhere! I cant wait to see you guys live & in concert!"
+    # tweet = "@TheEllenShow Thank you!! cant wait to see you in January.."
+    # tweet = "Performing in 5....4.....3.......2........."
+    print(textAnalytics.get_words_from_tweet(tweet))
 
 if __name__ == "__main__":
     main()

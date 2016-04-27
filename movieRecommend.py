@@ -74,7 +74,41 @@ class MovieRecommend(object):
         return mentioned_actors
 
     @classmethod
-    def get_tags_from_hashtags(self, profile, normalized = False):
+    def get_tags_from_hashtags(self, profile, tags_pool):
+        # gain all mentioned tags and the frequency
+        mentioned_tags = {}
+        for hashtag in profile["extracted_tags"]:
+            # print(hashtag.encode("utf8"))
+            words = self.textAnalytics.get_words_from_hashtag(hashtag)
+            for word in words:
+                if word in tags_pool:
+                    if word not in mentioned_tags:
+                        mentioned_tags[word] = 1
+                    else:
+                        mentioned_tags[word] += 1
+
+        print("[MovieRecommend] Found " + str(len(mentioned_tags)) + " tags from hashtags.")
+        return mentioned_tags
+
+    @classmethod
+    def get_tags_from_tweets(self, profile, tags_pool):
+        # gain all mentioned tags and the frequency
+        mentioned_tags = {}
+        for tweet in profile["extracted_tweets"]:
+            # print(tweet.encode("utf8"))
+            words = self.textAnalytics.get_words_from_tweet(tweet)
+            for word in words:
+                if word in tags_pool:
+                    if word not in mentioned_tags:
+                        mentioned_tags[word] = 1
+                    else:
+                        mentioned_tags[word] += 1
+
+        print("[MovieRecommend] Found " + str(len(mentioned_tags)) + " tags from tweets.")
+        return mentioned_tags
+
+    @classmethod
+    def get_tags_from_profile(self, profile, normalized=False):
         # get all tags from database
         tags_pool = set()
         if not normalized:
@@ -89,40 +123,18 @@ class MovieRecommend(object):
                 tags_pool.add(cur_content)
         print("[MovieRecommend] Built up tags pool, size: " + str(len(tags_pool)))
 
-        # gain all mentioned tags and the frequency
-        mentioned_tags = {}
-        for hashtag in profile["extracted_tags"]:
-            # print(hashtag.encode("utf8"))
-            words = self.textAnalytics.get_words_from_hashtag(hashtag)
-            for word in words:
-                if word in tags_pool:
-                    if word not in mentioned_tags:
-                        mentioned_tags[word] = 1
-                    else:
-                        mentioned_tags[word] += 1
+        tags_from_hashtags = self.get_tags_from_hashtags(profile, tags_pool)
+        tags_from_tweets = self.get_tags_from_tweets(profile, tags_pool)
 
-        print("[MovieRecommend] Found " + str(len(mentioned_tags)) + " tags from hashtags.")
-        print(mentioned_tags)
-        return mentioned_tags
-
-    @classmethod
-    def get_tags_from_tweets(self, profile):
-        print("[get_tags_from_tweets] TODO")
-        return []
-
-    @classmethod
-    def get_tags_from_profile(self, profile, normalized = False):
-        tags_from_hashtags = self.get_tags_from_hashtags(profile, normalized)
-        # tags_from_tweets = self.get_tags_from_tweets(profile)
-
-        # # combine two tags lists
-        # tags = tags_from_hashtags
-        # for tag in tags_from_tweets:
-        #     if tag not in tags:
-        #         tags.add(tag)
-        # return tags
-
-        return tags_from_hashtags
+        # combine two tags dicts
+        tags_dict = tags_from_hashtags
+        for tag in tags_from_tweets.keys():
+            if tag not in tags_dict.keys():
+                tags_dict[tag] = tags_from_tweets[tag]
+            else:
+                tags_dict[tag] += tags_from_tweets[tag]
+        print(tags_dict)
+        return tags_dict
 
     @classmethod
     def get_classification_from_profile(self, profile):
@@ -169,7 +181,7 @@ class MovieRecommend(object):
 
         print("[MovieRecommend] Profile retrieved.")
         actors = self.get_actors_from_profile(profile, integrated=True)
-        tags = self.get_tags_from_profile(profile, normalized = True)
+        tags = self.get_tags_from_profile(profile, normalized=True)
 
         # Combine actors and tags to recommend
         recommends = self.recommend_movies_combined_integrated(actors, tags)
@@ -232,7 +244,7 @@ class MovieRecommend(object):
                 cur_movie_score = cur_scores[pos]
                 # consider also the frequency
                 relevance = cur_movie_score * (1 + math.log(tags[tag], 3))
-                score = self.weight_tf_idf(relevance, cur_popularity, total_movies_num, 2)
+                score = self.weight_tf_idf(relevance, cur_popularity, total_movies_num, 2) / 3
                 if cur_movie_title not in movies_score:
                     movies_score[cur_movie_title] = score
                 else:
@@ -247,7 +259,7 @@ class MovieRecommend(object):
                 cur_movie_title = cur_movie
                 # consider also the frequency
                 relevance = 1 + math.log(actors[actor], 3)
-                score = self.weight_tf_idf(relevance, cur_popularity, total_actors_num, 10) / 4
+                score = self.weight_tf_idf(relevance, cur_popularity, total_actors_num, 10) / 2
                 if cur_movie_title not in movies_score:
                     movies_score[cur_movie_title] = score
                 else:
@@ -662,61 +674,61 @@ def main():
 
     # -----------------------------------------------------------------
 
-    # unit test, input: User ID = 4
-    print("[MovieRecommend] ***** Unit test for recommend_movies_for_user() *****")
-    user_id = 4
-    recommends = recommender.recommend_movies_for_user(user_id)
-    recommender.print_recommend(recommends)
-
-    # -----------------------------------------------------------------
-
-    # unit test for recommend_movies_based_on_history()
-    print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_history() *****")
-    user_history = []
-    user_history.append("Toy Story (1995)")
-    user_history.append("Furious 7 (2015)")
-    user_history.append("Fifty Shades of Grey (2015)")
-    user_history.append("Big Hero 6 (2014)")
-    user_history.append("X-Men: Days of Future Past (2014)")
-    user_history.append("The Lego Movie (2014)")
-    recommends = recommender.recommend_movies_based_on_history(user_history)
-    recommender.print_recommend(recommends)
-
-    # -----------------------------------------------------------------
-
-    # unit test, input tags:
-    # [28, 387, 599, 704, 794]
-    # ["adventure", "feel-good", "life", "new york city", "police"]
-    print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_tags() *****")
-    tags = [28, 387, 599, 704, 794]
-    recommends = recommender.recommend_movies_based_on_tags(tags)
-    recommender.print_recommend(recommends)
-    
-    print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_tags() with tag contents input *****")
-    tags = ["adventure", "feel-good", "life", "new york city", "police"]
-    recommends = recommender.recommend_movies_based_on_tags(tags, tagid=False)
-    recommender.print_recommend(recommends)
-
-    # -----------------------------------------------------------------
-
-    # unit test, input: Movie ID = 1 "Toy Story (1995)"
-    print("[MovieRecommend] ***** Unit test for recommend_movies_for_movie() *****")
-    movie_id = 1
-    recommends = recommender.recommend_movies_for_movie(movie_id)
-    recommender.print_recommend(recommends)
-
-    # -----------------------------------------------------------------
-
-    print("[MovieRecommend] ***** Unit test for recommend_movies_for_twitter() *****")
-    user_screen_name = "BrunoMars"
-    # user_screen_name = "LeoDiCaprio"
-    # user_screen_name = "BarackObama"
-    # user_screen_name = "sundarpichai"
-    # user_screen_name = "BillGates"
-    # user_screen_name = "jhsdfjak"
-    recommends = recommender.recommend_movies_for_twitter(user_screen_name)
+    # # unit test, input: User ID = 4
+    # print("[MovieRecommend] ***** Unit test for recommend_movies_for_user() *****")
+    # user_id = 4
+    # recommends = recommender.recommend_movies_for_user(user_id)
     # recommender.print_recommend(recommends)
-    print(recommender.get_titles_by_mids(recommends))
+
+    # # -----------------------------------------------------------------
+
+    # # unit test for recommend_movies_based_on_history()
+    # print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_history() *****")
+    # user_history = []
+    # user_history.append("Toy Story (1995)")
+    # user_history.append("Furious 7 (2015)")
+    # user_history.append("Fifty Shades of Grey (2015)")
+    # user_history.append("Big Hero 6 (2014)")
+    # user_history.append("X-Men: Days of Future Past (2014)")
+    # user_history.append("The Lego Movie (2014)")
+    # recommends = recommender.recommend_movies_based_on_history(user_history)
+    # recommender.print_recommend(recommends)
+
+    # # -----------------------------------------------------------------
+
+    # # unit test, input tags:
+    # # [28, 387, 599, 704, 794]
+    # # ["adventure", "feel-good", "life", "new york city", "police"]
+    # print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_tags() *****")
+    # tags = [28, 387, 599, 704, 794]
+    # recommends = recommender.recommend_movies_based_on_tags(tags)
+    # recommender.print_recommend(recommends)
+    
+    # print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_tags() with tag contents input *****")
+    # tags = ["adventure", "feel-good", "life", "new york city", "police"]
+    # recommends = recommender.recommend_movies_based_on_tags(tags, tagid=False)
+    # recommender.print_recommend(recommends)
+
+    # # -----------------------------------------------------------------
+
+    # # unit test, input: Movie ID = 1 "Toy Story (1995)"
+    # print("[MovieRecommend] ***** Unit test for recommend_movies_for_movie() *****")
+    # movie_id = 1
+    # recommends = recommender.recommend_movies_for_movie(movie_id)
+    # recommender.print_recommend(recommends)
+
+    # # -----------------------------------------------------------------
+
+    # print("[MovieRecommend] ***** Unit test for recommend_movies_for_twitter() *****")
+    # user_screen_name = "BrunoMars"
+    # # user_screen_name = "LeoDiCaprio"
+    # # user_screen_name = "BarackObama"
+    # # user_screen_name = "sundarpichai"
+    # # user_screen_name = "BillGates"
+    # # user_screen_name = "jhsdfjak"
+    # recommends = recommender.recommend_movies_for_twitter(user_screen_name)
+    # # recommender.print_recommend(recommends)
+    # print(recommender.get_titles_by_mids(recommends))
 
     # -----------------------------------------------------------------
 
@@ -733,13 +745,13 @@ def main():
 
     # -----------------------------------------------------------------
 
-    # unit test, input tags:
-    # ["adventure", "feel-good", "life", "new york city", "police"]    
-    print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_tags() with tag contents input *****")
-    tags = ["adventure", "feel good", "life", "new york city", "police"]
-    recommends = recommender.recommend_movies_based_on_tags_integrated(tags)
-    for recommend in recommends:
-        print(recommend.encode("utf8"))
+    # # unit test, input tags:
+    # # ["adventure", "feel good", "life", "new york city", "police"]    
+    # print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_tags_integrated() with tag contents input *****")
+    # tags = ["adventure", "feel good", "life", "new york city", "police"]
+    # recommends = recommender.recommend_movies_based_on_tags_integrated(tags)
+    # for recommend in recommends:
+    #     print(recommend.encode("utf8"))
 
 if __name__ == "__main__":
     main()
