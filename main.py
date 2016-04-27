@@ -285,6 +285,7 @@ class MovieApp:
 		sideframe.configure(background=BGCOLOR)
 		sideframe.place(anchor='e', relx=1, rely=.58)
 
+		self.historyVar.set(tuple(self.historyList[self.searchMode]))
 		self.historyBox = tk.Listbox(sideframe, listvariable=self.historyVar, height=25, width=55, selectmode=tk.EXTENDED)
 		self.historyBox.bind("<Delete>", self.delete_from_history)
 		self.historyBox.grid(row=0, column=0, sticky=('N','S', 'E', 'W'))
