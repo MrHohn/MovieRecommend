@@ -16,7 +16,7 @@ collectionName = "movies"
 mongo = DataService.Mongo("imdb")
 mongo.db[collectionName].create_index("imdbtitle", unique=True)
 
-runType = "keywordsfull" #Leave this as an empty string to run all the below operations. Set to appropriate string to run just one of the below operations.
+runType = "keywordsintegrate" #Leave this as an empty string to run all the below operations. Set to appropriate string to run just one of the below operations.
 
 # Add all movie titles and release years into database.
 # --- Most recent tested runtime (1m45s)
@@ -75,7 +75,7 @@ if runType == "" or runType == "keywordscollect" or runType == "keywordsfull":
 	imdbKeywords.collectKeywords(mongo)
 
 # Update all movies with keyword information.
-# --- Most recent tested runtime ()
+# --- Most recent tested runtime (3m)
 if runType == "" or runType == "keywords" or runType == "keywordsfull":
 	imdbKeywords.parse(mongo, collectionName)
 

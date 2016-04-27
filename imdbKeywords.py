@@ -127,10 +127,15 @@ def collectKeywords(mongo):
 def processMovieLensLinks(mongo):
 	newCounts = {}
 	newKeywords = set()
-	bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db["movies"], ordered=False)
 
 	print("=== Starting MovieLens tag integration ===")
 	startTime = time.time()
+	totalTagFilters = len(imdbMovieLensTags.imdbKeywords)
+	progressInterval = int(totalTagFilters/20)
+	count = 0
+	bulkCount = 0
+	bulkInterval = 100
+	bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db["movies"], ordered=False)
 	# Update movie keywords lists based on data in imdbMovieLensTags.py
 	for keyFilter in imdbMovieLensTags.imdbKeywords:
 		if keyFilter[0] == "*":
@@ -150,10 +155,11 @@ def processMovieLensLinks(mongo):
 			bulkPayload.find( findFilt ).update( {
 							"$addToSet": { "keywords": { "$each":imdbMovieLensTags.imdbKeywords[keyFilter] } }
 						} )
+			bulkCount += 10
 
 		elif keyFilter[0] == ":":
 			# Mongo search
-			bulkPayload.find( imdbMovieLensTags.getMongoSearch(keyFilter) ).update( {
+			mongo.db["movies"].update_many( imdbMovieLensTags.getMongoSearch(keyFilter), {
 							"$addToSet": { "keywords": { "$each":imdbMovieLensTags.imdbKeywords[keyFilter] } }
 						} )
 
@@ -162,11 +168,23 @@ def processMovieLensLinks(mongo):
 			bulkPayload.find( {"keywords":keyFilter} ).update( {
 							"$addToSet": { "keywords": { "$each":imdbMovieLensTags.imdbKeywords[keyFilter] } }
 						} )
+			bulkCount += 1
+
+		if bulkCount > bulkInterval:
+			bulkPayload.execute()
+			bulkCount = 0
+			bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db["movies"], ordered=False)
 
 		for keyword in imdbMovieLensTags.imdbKeywords[keyFilter]:
 			newKeywords.add(keyword)
+		count += 1
 
-	bulkPayload.execute()
+		if count % progressInterval == 0:
+			print(str(count), "keyword filters processed so far. ("+str(int((count/totalTagFilters)*100))+"%%) (%0.2fs)" % (time.time()-startTime))
+
+	if bulkCount > 0:
+		bulkPayload.execute()
+
 	print("[*] Complete (%0.2fs)" % (time.time()-startTime))
 
 	# Update keywords and counts in the keywords database
