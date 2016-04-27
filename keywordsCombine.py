@@ -191,7 +191,7 @@ def store_people_name_only(client):
 def count_movies_with_tags(client):
     db_integration = client["integration"]
     all_movies = set()
-    cursor = db_integration["integrated_tag"].find({})
+    cursor = db_integration["normalized_tags"].find({})
     for cur_tag in cursor:
         # print(cur_tag["tag"])
         if "movies" not in cur_tag:
@@ -199,7 +199,84 @@ def count_movies_with_tags(client):
         for movie in cur_tag["movies"]:
             all_movies.add(movie)
 
-    print("[keywordsCombine] Totle tagged movie: " + str(len(all_movies)))
+    print("[keywordsCombine] Total tagged movie: " + str(len(all_movies)))
+
+def reconstruct_tags(client):
+    print("[keywordsCombine] Starting reconstruction of all tags...")
+    startTime = time.time()
+
+    db_integration = client["integration"]
+    all_tags = {}
+    cursor = db_integration["integrated_tag"].find({})
+    for cur_tag in cursor:
+        cur_content = cur_tag["tag"]
+        if "(" in cur_content:
+            # android and saturn award
+            if cur_content == "android(s)/cyborg(s)":
+                cur_doc = {}
+                cur_doc["movies"] = cur_tag["movies"]
+                cur_doc["scores"] = cur_tag["scores"]
+                all_tags["android"] = cur_doc
+                all_tags["cyborg"] = cur_doc
+
+        elif "/" in cur_content:
+            # if cur_content == "ghosts/afterlife":
+            #     cur_doc = {}
+            #     cur_doc["movies"] = cur_tag["movies"]
+            #     cur_doc["scores"] = cur_tag["scores"]
+            #     all_tags["ghosts"] = cur_doc
+            #     all_tags["afterlife"] = cur_doc
+            # print(cur_content)
+
+            if cur_content == "9/11":
+                cur_doc = {}
+                cur_doc["movies"] = cur_tag["movies"]
+                cur_doc["scores"] = cur_tag["scores"]
+                all_tags["9/11"] = cur_doc
+
+        elif "-" in cur_content:
+            if "movies" not in cur_tag:
+                continue
+            if cur_content == "stop-motion" or cur_content == "coming-of-age":
+                continue
+            cur_doc = {}
+            cur_doc["movies"] = cur_tag["movies"]
+            cur_doc["scores"] = cur_tag["scores"]
+            cur_content = cur_content.replace("-"," ")
+            if cur_content in all_tags:
+                print("duplication: " + cur_content)
+            else:
+                all_tags[cur_content] = cur_doc
+            all_tags[cur_content] = cur_doc
+
+        elif "!" in cur_content or ":" in cur_content:
+            continue
+
+        else:
+            if "movies" not in cur_tag:
+                continue
+            if cur_content == "super hero" or cur_content == "post apocalyptic" or cur_content == "father son relationship" or cur_content == "sci fi":
+                continue
+            cur_doc = {}
+            cur_doc["movies"] = cur_tag["movies"]
+            cur_doc["scores"] = cur_tag["scores"]
+            if cur_content in all_tags:
+                print("duplication: " + cur_content)
+            else:
+                all_tags[cur_content] = cur_doc
+
+    # now store the new tags
+    for key in all_tags.keys():
+        cur_dict = all_tags[key]
+        db_integration["normalized_tags"].update_one({"tag": key}, {"$set": {
+            "movies": cur_dict["movies"],
+            "scores": cur_dict["scores"],
+            "popularity": len(cur_dict["movies"])
+            }}, True)
+
+
+    print("[keywordsCombine] Complete (%0.2fs)" % (time.time() - startTime))
+
 
 def main():
     mongo = Mongo()
@@ -217,13 +294,16 @@ def main():
     db_integration["integrated_tag"].create_index([("tag", pymongo.ASCENDING)])
     print("[keywordsCombine] Created index for tag in integrated_tag")
 
-    fix_popularity(mongo.client) # 3 seconds
+    # not used due to inaccurate
+    # # fix_popularity(mongo.client) # 3 seconds
 
     imdbPeopleIndex.build(mongo) # 3 minutes
 
     store_people_name_only(mongo.client) # 36 seconds
 
-    count_movies_with_tags(mongo.client)
+    reconstruct_tags(mongo.client) # 6 seconds
+
+    count_movies_with_tags(mongo.client) # 3 seconds
 
 if __name__ == "__main__":
     main()

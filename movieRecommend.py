@@ -74,13 +74,19 @@ class MovieRecommend(object):
         return mentioned_actors
 
     @classmethod
-    def get_tags_from_hashtags(self, profile):
+    def get_tags_from_hashtags(self, profile, normalized = False):
         # get all tags from database
         tags_pool = set()
-        cursor = self.db["tag"].find({})
-        for cur_tag in cursor:
-            cur_content = cur_tag["content"]
-            tags_pool.add(cur_content)
+        if not normalized:
+            cursor = self.db["tag"].find({})
+            for cur_tag in cursor:
+                cur_content = cur_tag["content"]
+                tags_pool.add(cur_content)
+        else:
+            cursor = self.db_integration["normalized_tags"].find({})
+            for cur_tag in cursor:
+                cur_content = cur_tag["tag"]
+                tags_pool.add(cur_content)
         print("[MovieRecommend] Built up tags pool, size: " + str(len(tags_pool)))
 
         # gain all mentioned tags and the frequency
@@ -96,7 +102,7 @@ class MovieRecommend(object):
                         mentioned_tags[word] += 1
 
         print("[MovieRecommend] Found " + str(len(mentioned_tags)) + " tags from hashtags.")
-        # print(mentioned_tags)
+        print(mentioned_tags)
         return mentioned_tags
 
     @classmethod
@@ -105,8 +111,8 @@ class MovieRecommend(object):
         return []
 
     @classmethod
-    def get_tags_from_profile(self, profile):
-        tags_from_hashtags = self.get_tags_from_hashtags(profile)
+    def get_tags_from_profile(self, profile, normalized = False):
+        tags_from_hashtags = self.get_tags_from_hashtags(profile, normalized)
         # tags_from_tweets = self.get_tags_from_tweets(profile)
 
         # # combine two tags lists
@@ -163,7 +169,7 @@ class MovieRecommend(object):
 
         print("[MovieRecommend] Profile retrieved.")
         actors = self.get_actors_from_profile(profile, integrated=True)
-        tags = self.get_tags_from_profile(profile)
+        tags = self.get_tags_from_profile(profile, normalized = True)
 
         # Combine actors and tags to recommend
         recommends = self.recommend_movies_combined_integrated(actors, tags)
@@ -199,7 +205,7 @@ class MovieRecommend(object):
                 mid = cur_movie["mid"]
                 # consider also the frequency
                 relevance = 1 + math.log(actors[actor], 3)
-                score = self.weight_tf_idf(relevance, cur_popular, total_actors_num, 3)
+                score = self.weight_tf_idf(relevance, cur_popular, total_actors_num, 5) / 2
                 if mid not in movies_score:
                     movies_score[mid] = score
                 else:
@@ -215,7 +221,7 @@ class MovieRecommend(object):
     def recommend_movies_combined_integrated(self, actors, tags):
         movies_score = {}
 
-        total_movies_num = 122418   # num of movies with tags (real)
+        total_movies_num = 121492   # num of movies with tags (real)
         for tag in tags.keys():
             cur_tag = self.db_integration["integrated_tag"].find_one({"tag": tag})
             cur_popularity = cur_tag["popularity"]
@@ -241,7 +247,7 @@ class MovieRecommend(object):
                 cur_movie_title = cur_movie
                 # consider also the frequency
                 relevance = 1 + math.log(actors[actor], 3)
-                score = self.weight_tf_idf(relevance, cur_popularity, total_actors_num, 4)
+                score = self.weight_tf_idf(relevance, cur_popularity, total_actors_num, 10) / 4
                 if cur_movie_title not in movies_score:
                     movies_score[cur_movie_title] = score
                 else:
@@ -434,7 +440,7 @@ class MovieRecommend(object):
         while not candidates_pool.empty():
             cur_candidate = candidates_pool.get()
             top_k.append(cur_candidate.cid)
-            # print("[MovieRecommend] Candidate id: " + str(cur_candidate.cid) + ", score: " + str(cur_candidate.score))
+            print("[MovieRecommend] Candidate id: " + str(cur_candidate.cid) + ", score: " + str(cur_candidate.score))
         top_k.reverse()
         return top_k
 
