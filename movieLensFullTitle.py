@@ -70,6 +70,9 @@ def main():
     db_imdb["movies"].create_index([("title", pymongo.ASCENDING)])
     print("[movieLensFullTitle] Created index for title in movies")
     retrieve(mongo)
+    db_movieRecommend = mongo.client["movieRecommend"]
+    db_movieRecommend["movie"].create_index([("title_full", pymongo.ASCENDING)])
+    print("[movieLensFullTitle] Created index for title_full in movie")
 
 if __name__ == "__main__":
     main()

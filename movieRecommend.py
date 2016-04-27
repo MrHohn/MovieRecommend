@@ -234,7 +234,7 @@ class MovieRecommend(object):
     def recommend_movies_combined_integrated(self, actors, tags):
         movies_score = {}
 
-        total_movies_num = 121492   # num of movies with tags (real)
+        total_movies_num = 121479   # num of movies with tags (real)
         for tag in tags.keys():
             cur_tag = self.db_integration["normalized_tags"].find_one({"tag": tag})
             cur_popularity = cur_tag["popularity"]
@@ -244,8 +244,9 @@ class MovieRecommend(object):
                 cur_movie_title = cur_movies[pos]
                 cur_movie_score = cur_scores[pos]
                 # consider also the frequency
-                relevance = cur_movie_score * (1 + math.log(tags[tag], 3))
-                score = self.weight_tf_idf(relevance, cur_popularity, total_movies_num, 2) / 3
+                # relevance = cur_movie_score * (1 + math.log(tags[tag], 3))
+                relevance = cur_movie_score * math.sqrt(tags[tag])
+                score = self.weight_tf_idf(relevance, cur_popularity, total_movies_num, 3)
                 if cur_movie_title not in movies_score:
                     movies_score[cur_movie_title] = score
                 else:
@@ -259,8 +260,9 @@ class MovieRecommend(object):
             for cur_movie in cur_movies:
                 cur_movie_title = cur_movie
                 # consider also the frequency
-                relevance = 1 + math.log(actors[actor], 3)
-                score = self.weight_tf_idf(relevance, cur_popularity, total_actors_num, 10) / 2
+                # relevance = 1 + math.log(actors[actor], 3)
+                relevance = math.sqrt(actors[actor])
+                score = self.weight_tf_idf(relevance, cur_popularity, total_actors_num, 4) * 1.3
                 if cur_movie_title not in movies_score:
                     movies_score[cur_movie_title] = score
                 else:
@@ -278,6 +280,8 @@ class MovieRecommend(object):
         total_movies_num = 121492   # num of movies with tags (real)
         for tag in tags:
             cur_tag = self.db_integration["normalized_tags"].find_one({"tag": tag})
+            if cur_tag is None:
+                continue
             cur_popularity = cur_tag["popularity"]
             cur_movies = cur_tag["movies"]
             cur_scores = cur_tag["scores"]
@@ -461,7 +465,7 @@ class MovieRecommend(object):
 
     @classmethod
     def weight_tf_idf(self, tf, df, num_docs, base):
-        return tf * math.log(float(num_docs) / df, base)
+        return tf * math.log(float(num_docs) / (df + 1), base)
 
     # gain top-k candidates given a dictionary storing their scores
     @classmethod
@@ -670,7 +674,7 @@ class Candidate(object):
 def main():
     recommender = MovieRecommend(Mongo("movieRecommend"))
 
-    # -----------------------------------------------------------------
+    # # -----------------------------------------------------------------
 
     # # unit test, input: User ID = 4
     # print("[MovieRecommend] ***** Unit test for recommend_movies_for_user() *****")
@@ -716,18 +720,18 @@ def main():
 
     # -----------------------------------------------------------------
 
-    # print("[MovieRecommend] ***** Unit test for recommend_movies_for_twitter_integrated() *****")
-    # # user_screen_name = "BrunoMars"
+    print("[MovieRecommend] ***** Unit test for recommend_movies_for_twitter_integrated() *****")
+    user_screen_name = "BrunoMars"
     # user_screen_name = "LeoDiCaprio"
-    # # user_screen_name = "BarackObama"
-    # # user_screen_name = "sundarpichai"
-    # # user_screen_name = "BillGates"
-    # # user_screen_name = "jhsdfjak"
-    # recommends = recommender.recommend_movies_for_twitter_integrated(user_screen_name)
-    # for recommend in recommends:
-    #     print(recommend.encode("utf8"))
+    # user_screen_name = "BarackObama"
+    # user_screen_name = "sundarpichai"
+    # user_screen_name = "BillGates"
+    # user_screen_name = "jhsdfjak"
+    recommends = recommender.recommend_movies_for_twitter_integrated(user_screen_name)
+    for recommend in recommends:
+        print(recommend.encode("utf8"))
 
-    # -----------------------------------------------------------------
+    # # -----------------------------------------------------------------
 
     # # unit test, input tags:
     # # ["adventure", "feel good", "life", "new york city", "police"]    
@@ -737,25 +741,25 @@ def main():
     # for recommend in recommends:
     #     print(recommend.encode("utf8"))
 
-    # # -----------------------------------------------------------------
+    # # # -----------------------------------------------------------------
 
-    # unit test for recommend_movies_based_on_history()
-    print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_history() *****")
-    user_history = []
-    user_history.append("Toy Story (1995)")
-    user_history.append("Big Hero 6 (2014)")
-    user_history.append("X-Men: Days of Future Past (2014)")
-    user_history.append("The Lego Movie (2014)")
-    user_history.append("The Secret Life of Walter Mitty (2013)")
-    user_history.append("Death Note: Desu nto (2006)")
-    user_history.append("Zombieland (2009)")
-    user_history.append("Fifty Shades of Grey (2015)")
-    user_history.append("The Maze Runner (2014)")
+    # # unit test for recommend_movies_based_on_history()
+    # print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_history() *****")
+    # user_history = []
+    # user_history.append("Toy Story (1995)")
+    # user_history.append("Big Hero 6 (2014)")
+    # user_history.append("X-Men: Days of Future Past (2014)")
+    # user_history.append("The Lego Movie (2014)")
+    # user_history.append("The Secret Life of Walter Mitty (2013)")
+    # user_history.append("Death Note: Desu nto (2006)")
+    # user_history.append("Zombieland (2009)")
+    # user_history.append("Fifty Shades of Grey (2015)")
+    # user_history.append("The Maze Runner (2014)")
 
-    recommends = recommender.recommend_movies_based_on_history(user_history)
-    recommends = recommender.get_titles_by_mids(recommends)
-    for recommend in recommends:
-        print(recommend.encode("utf8"))
+    # recommends = recommender.recommend_movies_based_on_history(user_history)
+    # recommends = recommender.get_titles_by_mids(recommends)
+    # for recommend in recommends:
+    #     print(recommend.encode("utf8"))
 
 if __name__ == "__main__":
     main()

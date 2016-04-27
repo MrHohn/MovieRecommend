@@ -112,12 +112,6 @@ def combine(client):
     startTime = time.time()
 
     tags_dict = {}
-    # store all tag-movies pair in memory
-    cursor = db_integration["tags"].find({})
-    for cur_tag in cursor:
-        cur_tag["set"] = set(cur_tag["movies"])
-        tags_dict[cur_tag["tag"]] = cur_tag
-
     # now match and append new movies
     cursor = db_integration["keywords"].find({})
     for cur_tag in cursor:
@@ -125,18 +119,31 @@ def combine(client):
         if count % progressInterval == 0:
             print("[keywordsCombine] %3d tags processed so far. (%d%%) (%0.2fs)" % (count, int(count * 100 / progressTotal), time.time() - startTime))
 
-        if cur_tag["keyword"] not in tags_dict.keys():
-            continue
-        cur_dict = tags_dict[cur_tag["keyword"]]
-        cur_movies_list = cur_dict["movies"]
-        cur_scores_list = cur_dict["scores"]
-        cur_movies_set = cur_dict["set"]
-
+        cur_dict = {}
+        cur_dict["movies"] = []
+        cur_dict["scores"] = []
+        cur_dict["set"] = set()
         for movie in cur_tag["relevant_movie"]:
-            if movie not in cur_movies_set:
-                cur_movies_set.add(movie)
-                cur_movies_list.append(movie)
-                cur_scores_list.append(0.7)
+            if movie not in cur_dict["set"]:
+                cur_dict["set"].add(movie)
+                cur_dict["movies"].append(movie)
+                cur_dict["scores"].append(0.7)
+        tags_dict[cur_tag["keyword"]] = cur_dict
+
+    # store all tag-movies pairs
+    cursor = db_integration["tags"].find({})
+    for cur_tag in cursor:
+        # filter out the useless tags
+        if cur_tag["tag"] not in tags_dict.keys():
+            continue
+        cur_dict = tags_dict[cur_tag["tag"]]
+        cur_dict_movies = cur_tag["movies"]
+        cur_dict_scores = cur_tag["scores"]
+        for i in range(len(cur_tag["movies"])):
+            if cur_dict_movies[i] not in cur_dict["set"]:
+                    cur_dict["set"].add(cur_dict_movies[i])
+                    cur_dict["movies"].append(cur_dict_movies[i])
+                    cur_dict["scores"].append(cur_dict_scores[i])
 
     for key in tags_dict.keys():
         cur_dict = tags_dict[key]
@@ -309,6 +316,9 @@ def main():
     store_people_name_only(mongo.client) # 36 seconds
 
     reconstruct_tags(mongo.client) # 6 seconds
+    db_integration = mongo.client["integration"]
+    db_integration["normalized_tags"].create_index([("tag", pymongo.ASCENDING)])
+    print("[keywordsCombine] Created index for tag in normalized_tags")
 
     count_movies_with_tags(mongo.client) # 3 seconds
 
