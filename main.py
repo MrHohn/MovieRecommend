@@ -30,12 +30,14 @@ class MovieApp:
 		self.mainframe = tk.Frame(root)
 		self.root = root
 		self.lastRecommend = [] # Last set of recommended titles, used for restoring the recommendation screen
-		self.historyList = set()   # Used for the movie history search screen. Stores the user's current movie history.
-		self.historyVar = tk.StringVar(value=tuple(self.historyList))
+		self.searchMode = MOVIE_MODE
+		self.historyList = [0,0]
+		self.historyList[MOVIE_MODE] = set()
+		self.historyList[TAG_MODE] = set()
+		self.historyVar = tk.StringVar(value=tuple(self.historyList[self.searchMode]))
 		self.searchResults = set()
 		self.searchVar = tk.StringVar(value=tuple(self.searchResults))
 		self.searchTimer = 0
-		self.searchMode = MOVIE_MODE
 		self.lastSearchContent = "-"
 		self.lastSearchUpdate = "-"
 		self.backFunction = self.username_screen
@@ -83,8 +85,6 @@ class MovieApp:
 
 		self.lastSearchContent += "-"
 		self.lastSearchUpdate += "-"
-		self.historyList = set()
-		self.historyVar.set(tuple(self.historyList))
 		self.searchResults = set()
 		self.searchVar.set(tuple(self.searchResults))
 
@@ -302,20 +302,20 @@ class MovieApp:
 	def add_to_history(self):
 		selectedMovies = self.searchList.curselection()
 		for selectionIndex in selectedMovies:
-			self.historyList.add(self.searchList.get(selectionIndex))
-		self.historyVar.set(tuple(self.historyList))
+			self.historyList[self.searchMode].add(self.searchList.get(selectionIndex))
+		self.historyVar.set(tuple(self.historyList[self.searchMode]))
 
 	def delete_from_history(self, event):
 		selectedMovies = self.historyBox.curselection()
 		for selectionIndex in selectedMovies:
-			self.historyList.remove(self.historyBox.get(selectionIndex))
-		self.historyVar.set(tuple(self.historyList))
+			self.historyList[self.searchMode].remove(self.historyBox.get(selectionIndex))
+		self.historyVar.set(tuple(self.historyList[self.searchMode]))
 
 	def save_history(self):
 		f = filedialog.asksaveasfile(mode='w', filetypes=[self.get_filetype()], defaultextension=self.get_filetype()[1])
 		if f is None:
 			return
-		for movie in self.historyList:
+		for movie in self.historyList[self.searchMode]:
 			f.write(movie+"\n")
 		f.close()
 
@@ -323,10 +323,10 @@ class MovieApp:
 		f = filedialog.askopenfile(mode='r', filetypes=[self.get_filetype()], defaultextension=self.get_filetype()[1])
 		if f is None:
 			return
-		self.historyList.clear()
+		self.historyList[self.searchMode].clear()
 		for line in f:
-			self.historyList.add(line)
-		self.historyVar.set(tuple(self.historyList))
+			self.historyList[self.searchMode].add(line)
+		self.historyVar.set(tuple(self.historyList[self.searchMode]))
 		f.close()
 
 	def get_filetype(self):
