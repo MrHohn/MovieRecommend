@@ -15,6 +15,8 @@ def collect_from_keywords(client):
     print("[keywordsCombine] Starting collection of keywords...")
     startTime = time.time()
 
+    all_keywords = set()
+
     tags_to_movies = {}
     for key in imdbKeywords.keys():
         count += 1
@@ -34,10 +36,15 @@ def collect_from_keywords(client):
             if cur_movie["imdbtitle"] in filter_movies or "tv" in cur_movie:
                 continue
             for tag in imdbKeywords[key]:
+                for keyword in cur_movie["keywords"]:
+                    all_keywords.add(keyword)
                 if tag not in tags_to_movies:
                     tags_to_movies[tag] = [cur_movie["imdbtitle"]]
                 else:
                     tags_to_movies[tag].append(cur_movie["imdbtitle"])
+
+    # total 129034 keywords found
+    print("[keywordsCombine] Total keywords: " + str(len(all_keywords)))
 
     for tag in tags_to_movies.keys():
         db_integration["keywords"].update_one({"keyword": tag}, {"$set": {
@@ -105,12 +112,6 @@ def combine(client):
     startTime = time.time()
 
     tags_dict = {}
-    # store all tag-movies pair in memory
-    cursor = db_integration["tags"].find({})
-    for cur_tag in cursor:
-        cur_tag["set"] = set(cur_tag["movies"])
-        tags_dict[cur_tag["tag"]] = cur_tag
-
     # now match and append new movies
     cursor = db_integration["keywords"].find({})
     for cur_tag in cursor:
@@ -118,18 +119,31 @@ def combine(client):
         if count % progressInterval == 0:
             print("[keywordsCombine] %3d tags processed so far. (%d%%) (%0.2fs)" % (count, int(count * 100 / progressTotal), time.time() - startTime))
 
-        if cur_tag["keyword"] not in tags_dict.keys():
-            continue
-        cur_dict = tags_dict[cur_tag["keyword"]]
-        cur_movies_list = cur_dict["movies"]
-        cur_scores_list = cur_dict["scores"]
-        cur_movies_set = cur_dict["set"]
-
+        cur_dict = {}
+        cur_dict["movies"] = []
+        cur_dict["scores"] = []
+        cur_dict["set"] = set()
         for movie in cur_tag["relevant_movie"]:
-            if movie not in cur_movies_set:
-                cur_movies_set.add(movie)
-                cur_movies_list.append(movie)
-                cur_scores_list.append(0.7)
+            if movie not in cur_dict["set"]:
+                cur_dict["set"].add(movie)
+                cur_dict["movies"].append(movie)
+                cur_dict["scores"].append(0.7)
+        tags_dict[cur_tag["keyword"]] = cur_dict
+
+    # store all tag-movies pairs
+    cursor = db_integration["tags"].find({})
+    for cur_tag in cursor:
+        # filter out the useless tags
+        if cur_tag["tag"] not in tags_dict.keys():
+            continue
+        cur_dict = tags_dict[cur_tag["tag"]]
+        cur_dict_movies = cur_tag["movies"]
+        cur_dict_scores = cur_tag["scores"]
+        for i in range(len(cur_tag["movies"])):
+            if cur_dict_movies[i] not in cur_dict["set"]:
+                    cur_dict["set"].add(cur_dict_movies[i])
+                    cur_dict["movies"].append(cur_dict_movies[i])
+                    cur_dict["scores"].append(cur_dict_scores[i])
 
     for key in tags_dict.keys():
         cur_dict = tags_dict[key]
@@ -191,7 +205,7 @@ def store_people_name_only(client):
 def count_movies_with_tags(client):
     db_integration = client["integration"]
     all_movies = set()
-    cursor = db_integration["integrated_tag"].find({})
+    cursor = db_integration["normalized_tags"].find({})
     for cur_tag in cursor:
         # print(cur_tag["tag"])
         if "movies" not in cur_tag:
@@ -199,7 +213,84 @@ def count_movies_with_tags(client):
         for movie in cur_tag["movies"]:
             all_movies.add(movie)
 
-    print("[keywordsCombine] Totle tagged movie: " + str(len(all_movies)))
+    print("[keywordsCombine] Total tagged movie: " + str(len(all_movies)))
+
+def reconstruct_tags(client):
+    print("[keywordsCombine] Starting reconstruction of all tags...")
+    startTime = time.time()
+
+    db_integration = client["integration"]
+    all_tags = {}
+    cursor = db_integration["integrated_tag"].find({})
+    for cur_tag in cursor:
+        cur_content = cur_tag["tag"]
+        if "(" in cur_content:
+            # android and saturn award
+            if cur_content == "android(s)/cyborg(s)":
+                cur_doc = {}
+                cur_doc["movies"] = cur_tag["movies"]
+                cur_doc["scores"] = cur_tag["scores"]
+                all_tags["android"] = cur_doc
+                all_tags["cyborg"] = cur_doc
+
+        elif "/" in cur_content:
+            # if cur_content == "ghosts/afterlife":
+            #     cur_doc = {}
+            #     cur_doc["movies"] = cur_tag["movies"]
+            #     cur_doc["scores"] = cur_tag["scores"]
+            #     all_tags["ghosts"] = cur_doc
+            #     all_tags["afterlife"] = cur_doc
+            # print(cur_content)
+
+            if cur_content == "9/11":
+                cur_doc = {}
+                cur_doc["movies"] = cur_tag["movies"]
+                cur_doc["scores"] = cur_tag["scores"]
+                all_tags["9/11"] = cur_doc
+
+        elif "-" in cur_content:
+            if "movies" not in cur_tag:
+                continue
+            if cur_content == "stop-motion" or cur_content == "coming-of-age":
+                continue
+            cur_doc = {}
+            cur_doc["movies"] = cur_tag["movies"]
+            cur_doc["scores"] = cur_tag["scores"]
+            cur_content = cur_content.replace("-"," ")
+            if cur_content in all_tags:
+                print("duplication: " + cur_content)
+            else:
+                all_tags[cur_content] = cur_doc
+            all_tags[cur_content] = cur_doc
+
+        elif "!" in cur_content or ":" in cur_content:
+            continue
+
+        else:
+            if "movies" not in cur_tag:
+                continue
+            if cur_content == "super hero" or cur_content == "post apocalyptic" or cur_content == "father son relationship" or cur_content == "sci fi":
+                continue
+            cur_doc = {}
+            cur_doc["movies"] = cur_tag["movies"]
+            cur_doc["scores"] = cur_tag["scores"]
+            if cur_content in all_tags:
+                print("duplication: " + cur_content)
+            else:
+                all_tags[cur_content] = cur_doc
+
+    # now store the new tags
+    for key in all_tags.keys():
+        cur_dict = all_tags[key]
+        db_integration["normalized_tags"].update_one({"tag": key}, {"$set": {
+            "movies": cur_dict["movies"],
+            "scores": cur_dict["scores"],
+            "popularity": len(cur_dict["movies"])
+            }}, True)
+
+
+    print("[keywordsCombine] Complete (%0.2fs)" % (time.time() - startTime))
+
 
 def main():
     mongo = Mongo()
@@ -208,7 +299,7 @@ def main():
     db_imdb["movies"].create_index([("keywords", pymongo.ASCENDING)])
     print("[keywordsCombine] Created index for keywords in movies")
 
-    collect_from_keywords(mongo.client) # 15 seconds
+    collect_from_keywords(mongo.client) # 34 seconds
 
     collect_from_tags(mongo.client) # 5 minutes
 
@@ -217,13 +308,19 @@ def main():
     db_integration["integrated_tag"].create_index([("tag", pymongo.ASCENDING)])
     print("[keywordsCombine] Created index for tag in integrated_tag")
 
-    fix_popularity(mongo.client) # 3 seconds
+    # not used due to inaccurate
+    # # fix_popularity(mongo.client) # 3 seconds
 
     imdbPeopleIndex.build(mongo) # 3 minutes
 
     store_people_name_only(mongo.client) # 36 seconds
 
-    count_movies_with_tags(mongo.client)
+    reconstruct_tags(mongo.client) # 6 seconds
+    db_integration = mongo.client["integration"]
+    db_integration["normalized_tags"].create_index([("tag", pymongo.ASCENDING)])
+    print("[keywordsCombine] Created index for tag in normalized_tags")
+
+    count_movies_with_tags(mongo.client) # 3 seconds
 
 if __name__ == "__main__":
     main()
