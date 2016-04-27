@@ -4,7 +4,7 @@
 # To determine which movies should have the MovieLens tags appended:
 # 		- Default query on the IMDB db would be {"keywords":"key"}
 # 		- Keys with a * in front should query the IMDB database for {"keywords":/key/}
-# 		- Keys containing a : character (ie "0:1") should query the IMDB database for {"0":1}
+# 		- Keys with a : in front should query the IMDB database using the respective query in getMongoSearch()
 #
 # Also see imdbIgnore at the bottom of this file.
 
@@ -20,22 +20,22 @@ imdbKeywords = {
 	"1960s":["1960s"],
 	"1970s":["1970s"],
 	"1980s":["1980s", "80s"],
-	"$and:[{'year':{'$gte':'1920'}},{'year':{'$lt':'1930'}}]":["1920s"],
-	"$and:[{'year':{'$gte':'1930'}},{'year':{'$lt':'1940'}}]":["1930s"],
-	"$and:[{'year':{'$gte':'1950'}},{'year':{'$lt':'1960'}}]":["1950s"],
-	"$and:[{'year':{'$gte':'1960'}},{'year':{'$lt':'1970'}}]":["1960s"],
-	"$and:[{'year':{'$gte':'1970'}},{'year':{'$lt':'1980'}}]":["1970s"],
-	"$and:[{'year':{'$gte':'1980'}},{'year':{'$lt':'1990'}}]":["1980s", "80s"],
+	":1920s":["1920s"],
+	":1930s":["1930s"],
+	":1950s":["1950s"],
+	":1960s":["1960s"],
+	":1970s":["1970s"],
+	":1980s":["1980s", "80s"],
 	"70mm-film":["70mm"],
 	"*9-11":["9/11"],
 
 	#============================================ A =============================================
-	"companies:'Aardman Animations'":["aardman", "aardman studios", "computer animation", "claymation"],
+	":aardman":["aardman", "aardman studios", "computer animation", "claymation"],
 	"*abortion":["abortion"],
 	"*action":["action", "action packed"],
-	"genre:'Action'":["action", "action packed"],
+	":action":["action", "action packed"],
 	"*adventure":["adventure"],
-	"genre:'Adventure'":["adventure"],
+	":adventure":["adventure"],
 	"*addiction":["addiction"],
 	"drug-abuse":["addiction", "drug abuse", "drug addiction"],
 	"prescription-drug-abuse":["addiction", "drug abuse", "drug addiction"],
@@ -101,7 +101,7 @@ imdbKeywords = {
 	"apocalypse":["post apocalyptic", "post-apocalyptic", "catastrophe", "disaster", "end of the world"],
 	"*end-of-the-world":["post apocalyptic", "post-apocalyptic", "catastrophe", "disaster", "end of the world"],
 	"zombie-apocalypse":["apocalypse", "post apocalyptic", "post-apocalyptic", "zombie", "zombies"],
-	"genres:'Animation'":["animated", "animation"],
+	":animation":["animated", "animation"],
 	"2d-animation":["animated", "animation", "cartoon"],
 	"part-animation":["animated", "animation"],
 	"stop-motion-animation":["animated", "animation"],
@@ -158,19 +158,19 @@ imdbKeywords = {
 	"painting":["art", "artist", "artistic", "artsy"],
 	"sculptor":["art", "artist", "artistic", "artsy"],
 	"*australia":["australian", "australia"],
-	"country:'Australia'":["australia", "australian"],
+	":australia":["australia", "australian"],
 	"*atheis":["atheism"],
 	"*autis":["autism"],
 	"*almodovar":["almodovar"],
-	"crew:'Pedro Almodóvar'":["almodovar"],
-	"cast:'Amy Smart'":["amy smart"],
+	":almodovar":["almodovar"],
+	":amy":["amy smart"],
 	"*arnold-schwarzenegger":["arnold"],
-	"cast:'Arnold Schwarzenegger'":["arnold"],
+	":arnold":["arnold"],
 
 	#============================================ B =============================================
-	"b-movie":["bad acting", "bad", "cheesy", "corny", "unintentionally funny", "so bad it's funny", "so bad it's good"],
-	"b-horror":["bad acting", "bad", "cheesy", "corny", "unintentionally funny", "so bad it's funny", "so bad it's good"],
-	"b-western":["bad acting", "bad", "cheesy", "corny", "unintentionally funny", "so bad it's funny", "so bad it's good"],
+	"b-movie":["bad acting", "cheesy", "corny", "unintentionally funny", "so bad it's funny", "so bad it's good"],
+	"b-horror":["bad acting", "cheesy", "corny", "unintentionally funny", "so bad it's funny", "so bad it's good"],
+	"b-western":["bad acting", "cheesy", "corny", "unintentionally funny", "so bad it's funny", "so bad it's good"],
 	"*baseball":["baseball"],
 	"bank-robbery":["bank robbery", "robbery", "heist"],
 	"bank-robber":["bank robbery", "robbery", "heist"],
@@ -213,7 +213,7 @@ imdbKeywords = {
 	"based-on-real-person":["based on a true story", "based on true story", "biographical", "biography", "biopic"],
 	"biographical":["based on a true story", "based on true story", "factual", "biographical", "biography", "biopic", "true story"],
 	"biopic":["based on a true story", "based on true story", "factual", "biographical", "biography", "biopic", "true story"],
-	"genres:'Biography'":["based on a true story", "based on true story", "factual", "biographical", "biography", "biopic", "true story"],
+	":biography":["based on a true story", "based on true story", "factual", "biographical", "biography", "biopic", "true story"],
 	"*batman":["batman"],
 	"*basketball":["basketball"],
 	"*beatles":["beatles"],
@@ -246,13 +246,13 @@ imdbKeywords = {
 	"*cruise":["boat"],
 	"*-ship":["boat"],
 	"*bollywood":["bollywood", "india"],
-	"country:'India'":["bollywood", "india"],
+	":india":["bollywood", "india"],
 	"*bomb":["bombs"],
 	"*bowling":["bowling"],
 	"bowler":["bowling"],
 	"*boston":["boston"],
 	"*brazil":["brazil"],
-	"country:'Brazil'":["brazil"],
+	":brazil":["brazil"],
 	"*brainwash":["brainwashing"],
 	"*hypno":["brainwashing"],
 	"black-and-white-scene":["black and white"],
@@ -274,7 +274,7 @@ imdbKeywords = {
 	"british-humor":["british comedy"],
 	"*british":["british"],
 	"*bbc":["british"],
-	"country:'UK'":["british"],
+	":uk":["british"],
 	"*broadway":["broadway"],
 	"*brothers":["brothers"],
 	"brother-vs-brother":["brothers"],
@@ -300,7 +300,7 @@ imdbKeywords = {
 	"camping":["camp"],
 	"campy":["campy"],
 	"*canad":["canada"],
-	"country:'Canada'":["canada"],
+	":canada":["canada"],
 	"*cannibal":["cannibalism"],
 	"*cancer":["cancer"],
 	"*capitalis":["capitalism"],
@@ -325,7 +325,7 @@ imdbKeywords = {
 	"*trapeze":["circus"],
 	"*comedy":["comedy", "humor", "funny", "humorous", "hillarious", "hilarious"],
 	"*humor":["comedy", "humor", "funny", "humorous", "hillarious", "hilarious"],
-	"genre:'Comedy'":["comedy", "humor", "funny", "humorous", "hillarious", "hilarious"],
+	":comedy":["comedy", "humor", "funny", "humorous", "hillarious", "hilarious"],
 	"clown":["circus"],
 	"*clown":["clowns"],
 	"*catastroph":["catastrophe", "disaster"],
@@ -352,7 +352,7 @@ imdbKeywords = {
 	"child":["children", "kids"],
 	"child-protagonist":["children", "kids"],
 	"*china":["china"],
-	"country:'China'":["china"],
+	":china":["china"],
 	"*chocolate":["chocolate"],
 	"cia-agent":["cia", "fbi", "secret service"],
 	"ex-cia-agent":["cia", "fbi", "secret service"],
@@ -407,32 +407,30 @@ imdbKeywords = {
 	"*horror":["creepy", "scary", "horror", "eerie", "frightening"],
 	"*creepy":["creepy", "scary", "horror", "eerie", "frightening"],
 	"*spooky":["creepy", "scary", "horror", "eerie", "frightening"],
-	"genre:'Horror'":["creepy", "scary", "horror", "eerie", "frightening"],
+	":horror":["creepy", "scary", "horror", "eerie", "frightening"],
 	"*crime":["crime", "organized crime"],
-	"genre:'Crime'":["crime", "organized crime"],
+	":crime":["crime", "organized crime"],
 	"*cross-dress":["cross dressing"],
 	"crude-humor":["crude humor", "dark humor", "dark comedy"],
 	"dark-humor":["crude humor", "dark humor", "dark comedy"],
 	"*cuba":["cuba"],
-	"country:'Cuba'":["cuba"],
+	":cuba":["cuba"],
 	"cult-film":["cult film", "cult classic", "classic"],
 	"cult-tv":["cult film", "cult classic", "classic"],
 	"cult":["cult"],
 	"culture-clash":["culture clash"],
 	"culture-shock":["culture clash"],
 	"cyberpunk":["cyberpunk"],
-	"*cynic":["cynical"],
 	"*coen":["coen bros", "coen brothers"],
-	"crew:'Ethan Coen'":["coen bros", "coen brothers"],
-	"crew:'Joel Coen'":["coen bros", "coen brothers"],
+	":ethan":["coen bros", "coen brothers"],
+	":joel":["coen bros", "coen brothers"],
 
 	#============================================ D =============================================
 	"*danc":["dance", "dancing"],
-	"dark":["dark"],
 	"dark-fantasy":["dark fantasy"],
 	"dark-hero":["dark hero"],
 	"*dc-comic":["dc comics"],
-	"companies:'DC Comics'":["dc comics"],
+	":dc comics":["dc comics"],
 	"*deadpan":["deadpan"],
 	"dry-humor":["deadpan"],
 	"dry-humour":["deadpan"],
@@ -447,8 +445,8 @@ imdbKeywords = {
 	"*satan":["demons", "devil"],
 	"*johnny-depp":["depp & burton"],
 	"*tim-burton":["depp & burton"],
-	"crew:'Johnny Depp'":["depp & burton"],
-	"crew:'Tim Burton'":["depp & burton"],
+	":johnny":["depp & burton"],
+	":tim":["depp & burton"],
 	"sadness":["depressing", "sad"],
 	"sad-ending":["depressing", "sad"],
 	"*unhappy":["depressing", "sad"],
@@ -468,18 +466,18 @@ imdbKeywords = {
 	"*handicap":["disability"],
 	"*paralys":["disability"],
 	"*disney":["disney"],
-	"companies:/Disney/":["disney"],
+	":disney":["disney"],
 	"*divorce":["divorce"],
 	"doctor":["doctors", "hospital"],
 	"medical-doctor":["doctors", "hospital"],
 	"*medical":["doctors", "hospital"],
 	"*hospital":["doctors", "hospital"],
-	"genre:'Documentary'":["documentary"],
+	":documentary":["documentary"],
 	"*dog":["dog", "dogs", "animal", "animal movie"],
 	"*dolphin":["dolphins", "animal", "animal movie"],
 	"*seuss":["dr. seuss"],
 	"*dragon":["dragon", "dragons"],
-	"genres:'Drama'":["drama"],
+	":drama":["drama"],
 	"*dream":["dreams"],
 	"dysfunctional-family":["dysfunctional family"],
 	"dysfunctional-marriage":["dysfunctional family"],
@@ -494,12 +492,12 @@ imdbKeywords = {
 	"visual-effects":["effects", "special effects"],
 	"digital-effects":["effects", "special effects"],
 	"*egypt":["egypt"],
-	"country:'Egypt'":["egypt"],
-	"cast:'Emma Watson'":["emma watson"],
+	":egypt":["egypt"],
+	":emma":["emma watson"],
 	"*england":["england"],
-	"country:'England'":["england"],
+	":england":["england"],
 	"*ennio-morricone":["ennio morricone"],
-	"crew:'Ennio Morricone'":["ennio morricone"],
+	":ennio":["ennio morricone"],
 	"*nature":["environment", "environmental", "nature"],
 	"*environment":["environment", "environmental", "nature"],
 	"*wilderness":["environment", "environmental", "nature"],
@@ -521,14 +519,14 @@ imdbKeywords = {
 	"*fairy-tale":["fairy tale", "fairy tales"],
 	"fake-documentary":["fake documentary"],
 	"fictional-documentary":["fake documentary"],
-	"genres:'Family'":["family", "family bonds"],
+	":family":["family", "family bonds"],
 	"family-conflict":["family drama"],
 	"family-crisis":["family drama"],
 	"family-abandonment":["family drama"],
 	"family-in-danger":["family drama"],
 	"family-betrayal":["family drama"],
-	"genres:{'$all':['Family','Drama']}":["family drama"],
-	"genre:'Fantasy'":["fantasy"],
+	":family drama":["family drama"],
+	":fantasy":["fantasy"],
 	"fantasy-world":["fantasy world"],
 	"*farce":["farce"],
 	"*fascis":["fascism"],
@@ -542,7 +540,7 @@ imdbKeywords = {
 	"*father-son":["father son relationship", "father-son relationship"],
 	"*finnish":["finnish"],
 	"*finland":["finnish"],
-	"country:'Finland'":["finnish"],
+	":finland":["finnish"],
 	"*firefly":["firefly"],
 	"*first-contact":["first contact", "alien", "aliens", "alien invasion"],
 	"fishing":["fish"],
@@ -560,7 +558,7 @@ imdbKeywords = {
 	"eternal-youth":["fountain of youth"],
 	"*france":["france", "french"],
 	"*french":["france", "french"],
-	"country:'France'":["france", "french"],
+	":france":["france", "french"],
 	"*franchise":["franchise"],
 	"*francis-ford-copolla":["francis ford copolla"],
 	"*freedom":["freedom", "free speech"],
@@ -585,7 +583,7 @@ imdbKeywords = {
 	"computer-whizz":["genius", "intelligent"],
 	"*genocide":["genocide"],
 	"*german":["german", "germany"],
-	"country:'Germany'":["german", "germany"],
+	":germany":["german", "germany"],
 	"*giant-robot":["giant robots"],
 	"*global-warming":["global warming"],
 	"god":["god"],
@@ -601,8 +599,7 @@ imdbKeywords = {
 	"*graphic-design":["graphic design", "art", "artist", "artistic"],
 	"graphic-novel":["graphic novel"],
 	"*terry-gilliam":["gilliam"],
-	"cast:'Terry Gilliam'":["gilliam"],
-	"crew:'Terry Gilliam'":["gilliam"],
+	":terry":["gilliam"],
 	"*greed":["greed"],
 	"*selfish":["greed"],
 	"*grindhouse":["grindhouse"],
@@ -630,7 +627,7 @@ imdbKeywords = {
 	"happy-end":["happy ending"],
 	"happy-ending":["happy ending"],
 	"*harry-potter":["harry potter"],
-	"title:/Harry Potter/":["harry potter"],
+	":harry potter":["harry potter"],
 	"*haunted-house":["haunted house"],
 	"*hawaii":["hawaii"],
 	"heartbreaking":["heartbreaking", "depressing", "sad"],
@@ -642,9 +639,9 @@ imdbKeywords = {
 	"high-fantasy":["high fantasy"],
 	"*high-school":["high school"],
 	"*hip-hop":["hip hop"],
-	"genres:'History'":["historical", "history"],
+	":history":["historical", "history"],
 	"*hitchcock":["hitchcock"],
-	"crew:'Alfred Hitchcock'":["hitchcock"],
+	":alfred":["hitchcock"],
 	"*holiday":["holiday"],
 	"*vacation":["holiday"],
 	"*hollywood":["hollywood", "california", "los angeles"],
@@ -682,7 +679,7 @@ imdbKeywords = {
 	"independent-music":["indie", "music", "musicians"],
 	"independent-television":["indie"],
 	"*indiana-jones":["indiana jones"],
-	"title:/Indiana Jones/":["indiana jones"],
+	":indiana jones":["indiana jones"],
 	"american-indian":["indians", "native americans"],
 	"indians":["indians", "native americans"],
 	"innocence-lost":["innocence lost"],
@@ -700,13 +697,13 @@ imdbKeywords = {
 	"interracial-couple":["interracial romance"],
 	"*intimate":["intimate"],
 	"*iran":["iran"],
-	"country:'Iran'":["iran"],
+	":iran":["iran"],
 	"*iraq":["iraq"],
-	"country:'Iraq'":["iraq"],
+	":iraq":["iraq"],
 	"*iraq-war":["iraq war"],
 	"*ireland":["ireland", "irish"],
 	"*irish":["ireland", "irish"],
-	"country:'Ireland'":["ireland", "irish"],
+	":ireland":["ireland", "irish"],
 	"*irish-accent":["irish accent"],
 	"*ironic":["ironic"],
 	"*irony":["ironic"],
@@ -717,17 +714,17 @@ imdbKeywords = {
 	"desert-island":["island"],
 	"remote-island":["island"],
 	"*israel":["israel"],
-	"country:'Israel'":["israel"],
+	":israel":["israel"],
 	"*italy":["italy", "italian"],
 	"*italian":["italy", "italian"],
-	"country:'Italy'":["italy", "italian"],
+	":italy":["italy", "italian"],
 
 	#============================================ J =============================================
 	"*james-bond":["james bond", "007", "007 (series)"],
-	"title:/James Bond/":["james bond", "007", "007 (series)"],
+	":james bond":["james bond", "007", "007 (series)"],
 	"*jane-austen":["jane austen"],
 	"*japan":["japan", "japanese"],
-	"country:'Japan'":["japan", "japanese"],
+	":japan":["japan", "japanese"],
 	"*jazz":["jazz"],
 	"*jesus":["jesus", "christian", "christianity", "biblical"],
 	"judaism":["jewish", "jews", "judaism"],
@@ -753,7 +750,7 @@ imdbKeywords = {
 	"*martial-":["kung fu", "fight scenes", "fighting", "action", "action packed", "martial arts"],
 	"*kurosawa":["kurosawa", "japan", "japanese"],
 	"*stanley-kubrick":["kubrick"],
-	"crew:'Stanley Kubrick'":["kubrick"],
+	":stanley":["kubrick"],
 
 	#============================================ L =============================================
 	"*vegas":["las vegas"],
@@ -770,7 +767,7 @@ imdbKeywords = {
 	"*lion":["lions", "animal", "animal movie"],
 	"*literary":["literature"],
 	"*literature":["literature"],
-	"cast:'Liv Tyler'":["liv tyler"],
+	":liv":["liv tyler"],
 	"*london":["london", "france", "french"],
 	"*lonel":["loneliness"],
 	"*los-angeles":["los angeles", "california"],
@@ -781,7 +778,7 @@ imdbKeywords = {
 	"*micro-budget":["low budget"],
 	"*tight-budget":["low budget"],
 	"*david-lynch":["lynch"],
-	"crew:'David Lynch'":["lynch"],
+	":david":["lynch"],
 	"*lyric":["lyrical", "music", "musicians"],
 
 	#============================================ M =============================================
@@ -803,15 +800,15 @@ imdbKeywords = {
 	"mars":["mars"],
 	"mars-the-planet":["mars"],
 	"*marvel":["marvel"],
-	"companies:/Marvel/":["marvel"],
+	":marvel":["marvel"],
 	"*marx-brothers":["marx brothers"],
 	"*groucho-marx":["marx brothers"],
 	"*harpo-marx":["marx brothers"],
 	"*chico-marx":["marx brothers"],
-	"cast:'Groucho Marx'":["marx brothers"],
-	"cast:'Harpo Marx'":["marx brothers"],
-	"cast:'Chico Marx'":["marx brothers"],
-	"cast:'Zeppo Marx'":["marx brothers"],
+	":groucho":["marx brothers"],
+	":harpo":["marx brothers"],
+	":chico":["marx brothers"],
+	":zeppo":["marx brothers"],
 	"*math":["math", "mathematics"],
 	"maze":["maze"],
 	"maze-game":["maze"],
@@ -832,7 +829,7 @@ imdbKeywords = {
 	"*mentor":["mentor"],
 	"*metaphysic":["metaphysics"],
 	"*mexic":["mexico"],
-	"country:'Mexico'":["mexico"],
+	":mexico":["mexico"],
 	"*middle-east":["middle east"],
 	"midlife-crisis":["midlife crisis"],
 	"mid-life-crisis":["midlife crisis"],
@@ -842,8 +839,8 @@ imdbKeywords = {
 	"*missionary":["mission from god"],
 	"mistaken-identity":["mistaken identity"],
 	"*ghibli":["studio ghibli","miyazaki","anime","japan","japanese"],
-	"companies:'Studio Ghibli'":["studio ghibli","miyazaki","anime","japan","japanese"],
-	"crew:'Hayao Miyazaki'":["studio ghibli","miyazaki","anime","japan","japanese"],
+	":studio ghibli":["studio ghibli","miyazaki","anime","japan","japanese"],
+	":hayao":["studio ghibli","miyazaki","anime","japan","japanese"],
 	"angry-mob":["mob"],
 	"lynch-mob":["mob"],
 	"flash-mob":["mob"],
@@ -864,7 +861,7 @@ imdbKeywords = {
 	"ape":["monkey", "animal", "animal movie"],
 	"*monster":["monster", "monsters"],
 	"*monty-python":["monty python"],
-	"title:/Monty Python/":["monty python"],
+	":monty python":["monty python"],
 	"mood-swing":["moody"],
 	"bi-polar":["moody"],
 	"bipolar-disorder":["moody"],
@@ -886,18 +883,18 @@ imdbKeywords = {
 	"moving-van":["moving"],
 	"*mozart":["mozart"],
 	"*mtv":["mtv"],
-	"$and:[{'companies':/MTV/},{'companies':{'$not':/Magyar Televízió Müvelödési Föszerkesztöség/}},{'companies':{'$not':/Mainosteleviso/}}]":["mtv"],
+	":mtv":["mtv"],
 	"multiple-storyline":["multiple storylines"],
 	"multi-plot":["multiple storylines"],
 	"*mummy":["mummy"],
 	"*muppet":["muppets", "puppets"],
-	"title:/Muppet/":["muppets", "puppets"],
+	":muppets":["muppets", "puppets"],
 	"*murder":["murder", "death"],
 	"*killer":["murder", "death"],
 	"murder-investigation":["murder mystery"],
 	"murder-mystery":["murder mystery"],
-	"genres:'Music'":["music", "musicians"],
-	"genres:'Musical'":["musical"],
+	":music":["music", "musicians"],
+	":musical":["musical"],
 	"*music-industry":["music business", "music", "musicians"],
 	"*music-business":["music business", "music", "musicians"],
 	"record-producer":["music business", "music", "musicians"],
@@ -906,7 +903,7 @@ imdbKeywords = {
 	"record-label":["music business", "music", "musicians"],
 	"record-contract":["music business", "music", "musicians"],
 	"*mutant":["mutants"],
-	"genres:'Mystery'":["mystery"],
+	":mystery":["mystery"],
 	"*myth":["mythology"],
 	"*folktale":["mythology"],
 	"*folk-tale":["mythology"],
@@ -924,7 +921,7 @@ imdbKeywords = {
 	"*tsunami":["natural disaster", "catastrophe", "disaster"],
 	"meteor-impact":["natural disaster", "catastrophe", "disaster"],
 	"forest-fire":["natural disaster", "catastrophe", "disaster"],
-	"crew:'Niel Gaiman'":["neil gaiman"],
+	":niel":["neil gaiman"],
 	"*neo-nazi":["neo-nazis", "nazi", "nazis"],
 	"neo-noir":["neo-noir"],
 	"tech-noir":["neo-noir"],
@@ -935,12 +932,12 @@ imdbKeywords = {
 	"big-apple":["new york", "new york city"],
 	"*times-square":["new york", "new york city"],
 	"*new-zealand":["new zealand"],
-	"country:'New Zealand'":["new zealand"],
+	":new zealand":["new zealand"],
 	"*ninja":["ninja"],
 	"no-dialogue":["no dialogue"],
 	"*nocturnal":["nocturnal"],
-	"genres:'Film-Noir'":["noir", "film noir"],
-	"genres:{'$all':['Thriller','Film-Noir']}":["noir thriller"],
+	":noir":["noir", "film noir"],
+	":noir thriller":["noir thriller"],
 	"*non-linear":["non-linear", "nonlinear"],
 	"*nonlinear":["non-linear", "nonlinear"],
 	"nostalgia":["nostalgia", "nostalgic"],
@@ -974,7 +971,7 @@ imdbKeywords = {
 
 	#============================================ P =============================================
 	"*palestine":["palestine"],
-	"country:'Palestine'":["palestine"],
+	":palestine":["palestine"],
 	"parallel-universe":["parallel universe", "alternate reality", "alternate universe"],
 	"parallel-world":["parallel universe", "alternate reality", "alternate universe"],
 	"parallel-worlds":["parallel universe", "alternate reality", "alternate universe"],
@@ -992,21 +989,21 @@ imdbKeywords = {
 	"period-piece":["period piece"],
 	"period-film":["period piece"],
 	"*peter-pan":["peter pan"],
-	"title:/Peter Pan/":["peter pan"],
+	":peter pan":["peter pan"],
 	"*philosoph":["philosophical", "philosophy"],
 	"*photograph":["photographer", "photography"],
 	"pig":["pigs", "animal", "animal movie"],
 	"cartoon-pig":["pigs", "animal", "animal movie"],
 	"*pirate":["pirates", "swashbuckler"],
 	"swashbuckler":["pirates", "swashbuckler"],
-	"companies:'Pixar Animation Studios'":["pixar", "pixar animation"],
+	":pixar":["pixar", "pixar animation"],
 	"*plot-twist":["plot twist", "twist"],
 	"*poet":["poetry"],
 	"*poker":["poker", "gambling"],
 	"*poland":["poland"],
 	"polish":["poland"],
 	"polish-history":["poland"],
-	"country:'Poland'":["poland"],
+	":poland":["poland"],
 	"*police":["police"],
 	"*-cop":["police"],
 	"police-brutality":["police corruption"],
@@ -1092,7 +1089,7 @@ imdbKeywords = {
 	"realistic":["realistic"],
 	"realism":["realistic"],
 	"hyperrealism":["realistic"],
-	"genres:'Reality-TV'":["reality tv"],
+	":reality-tv":["reality tv"],
 	"*rebellion":["rebellion"],
 	"*redemption":["redemption"],
 	"*relationship":["relationships"],
@@ -1108,12 +1105,12 @@ imdbKeywords = {
 	"*robber":["robbery", "heist"],
 	"*heist":["robbery", "heist"],
 	"reference-to-robert-downey-jr.":["robert downey jr"],
-	"cast:'Robert Downey Jr.'":["robert downey jr"],
+	":robert downey":["robert downey jr"],
 	"*robert-ludlum":["robert ludlum"],
-	"crew:'Robert Ludlum'":["robert ludlum"],
+	":robert":["robert ludlum"],
 	"*rock-and-roll":["rock and roll", "music", "musicians"],
-	"genres:'Romance'":["romance", "romantic", "love", "love story"],
-	"genres:{'$all':['Romance','Comedy']}":["romantic comedy"],
+	":romance":["romance", "romantic", "love", "love story"],
+	":romantic comedy":["romantic comedy"],
 	"rome-italy":["rome", "italy", "italian"],
 	"acient-rome":["rome"],
 	"roman":["rome"],
@@ -1121,7 +1118,7 @@ imdbKeywords = {
 	"*runaway":["runaway"],
 	"run-away":["runaway"],
 	"*russia":["russia", "russian"],
-	"country:'Russia'":["russia", "russian"],
+	":russia":["russia", "russian"],
 
 	#============================================ S =============================================
 	"*sacrific":["sacrifice"],
@@ -1129,19 +1126,18 @@ imdbKeywords = {
 	"*san-francisco":["san francisco", "california"],
 	"*sarcas":["sarcasm"],
 	"*saturday-night-live":["saturday night live"],
-	"title:/Saturday Night Live/":["saturday night live"],
-	"title:/SNL/":["saturday night live"],
+	":snl":["saturday night live"],
 	"scenery":["scenic", "environment", "environmental", "nature"],
 	"scenic":["scenic", "environment", "environmental", "nature"],
 	"scenic-beauty":["scenic", "environment", "environmental", "nature"],
 	"scenic-route":["scenic", "environment", "environmental", "nature"],
 	"*schizophreni":["schizophrenia"],
 	"*school":["school"],
-	"genres:'Sci-Fi'":["sci fi", "sci-fi", "scifi", "science fiction"],
+	":sci-fi":["sci fi", "sci-fi", "scifi", "science fiction"],
 	"*scien":["science"],
 	"*scotland":["scotland"],
 	"*scottish":["scotland"],
-	"country:'Scotland'":["scotland"],
+	":scotland":["scotland"],
 	"*screwball":["screwball", "screwball comedy"],
 	"*secret":["secrets"],
 	"segregation":["segregation"],
@@ -1189,8 +1185,7 @@ imdbKeywords = {
 	"python":["snakes"],
 	"*soccer":["soccer"],
 	"social-commentary":["social commentary"],
-	"cast:'Sophia Copolla'":["sophia coppola"],
-	"crew:'Sophia Copolla'":["sophia coppola"],
+	":sophia":["sophia coppola"],
 	"*south-africa":["south africa", "africa"],
 	"*south-america":["south america"],
 	"*southerner":["southern theme"],
@@ -1202,7 +1197,7 @@ imdbKeywords = {
 	"*space-opera":["space opera"],
 	"*spaghetti-western":["spaghetti western"],
 	"*spain":["spain"],
-	"country:'Spain'":["spain"],
+	":spain":["spain"],
 	"*spanish":["spanish"],
 	"spanish-civil-war":["spanish civil war"],
 	"tv-special":["special", "television", "made for tv"],
@@ -1213,11 +1208,11 @@ imdbKeywords = {
 	"spelling-bee":["spelling bee"],
 	"*spider":["spiders"],
 	"*spielberg":["spielberg"],
-	"crew:'Steven Spielberg'":["spielberg"],
+	":steven":["spielberg"],
 	"*star-trek":["star trek"],
 	"*spock":["star trek", "spock"],
-	"title:/Star Trek/":["star trek", "spock"],
-	"genres:'Sport'":["sports"],
+	":star trek":["star trek", "spock"],
+	":sport":["sports"],
 	"*spy":["spy", "espionage", "spying", "spies"],
 	"*stage-magician":["stage magic"],
 	"*stand-up-comed":["stand-up comedy"],
@@ -1225,7 +1220,7 @@ imdbKeywords = {
 	"stand-up-show":["stand-up comedy"],
 	"stand-up-routine":["stand-up comedy"],
 	"*star-wars":["star wars"],
-	"title:/Star Wars/":["star wars"],
+	":star wars":["star wars"],
 	"*steampunk":["steampunk"],
 	"*steam-punk":["steampunk"],
 	"*stereotype":["stereotypes"],
@@ -1252,7 +1247,7 @@ imdbKeywords = {
 	"*suspense":["suspense", "suspenseful"],
 	"*swedish":["swedish"],
 	"*sweden":["swedish"],
-	"country:'Sweden'":["swedish"],
+	":sweden":["swedish"],
 	"switching-bodies":["switching places"],
 	"switching-roles":["switching places"],
 	"switching-sides":["switching places"],
@@ -1263,7 +1258,7 @@ imdbKeywords = {
 
 	#============================================ T =============================================
 	"*tarantino":["tarantino"],
-	"crew:'Quentin Tarantino'":["tarantino"],
+	":quentin":["tarantino"],
 	"*teacher":["teacher"],
 	"*professor":["teacher"],
 	"*technology":["technology"],
@@ -1280,7 +1275,7 @@ imdbKeywords = {
 	"fatal-disease":["terminal illness"],
 	"*terroris":["terrorism"],
 	"*texas":["texas"],
-	"genres:'Thriller'":["thriller"],
+	":thriller":["thriller"],
 	"time":["time"],
 	"time-freeze":["time"],
 	"*timeline":["time"],
@@ -1302,7 +1297,7 @@ imdbKeywords = {
 	"*tokyo":["tokyo", "japan", "japanese"],
 	"*tolkien":["tolkien"],
 	"*tom-clancy":["tom clancy"],
-	"crew:'Tom Clancy'":["tom clancy"],
+	":tom":["tom clancy"],
 	"*toy":["toys"],
 	"*tragedy":["tragedy", "depressing", "sad"],
 	"*train":["train", "trains", "travel"],
@@ -1318,7 +1313,7 @@ imdbKeywords = {
 	"historical-truth":["true story", "factual"],
 	"true-story":["true story", "factual"],
 	"*truman-capote":["truman capote"],
-	"crew:'Truman Capote'":["truman capote"],
+	":truman":["truman capote"],
 	"*twist-ending":["twist", "twist ending", "plot twist", "surprise ending"],
 	"twist-at-the-end":["twist", "twist ending", "plot twist", "surprise ending"],
 	"*surprise-ending":["twist", "twist ending", "plot twist", "surprise ending"],
@@ -1349,7 +1344,7 @@ imdbKeywords = {
 	"revenge":["vengeance", "revenge"],
 	"vienna-austria":["vienna"],
 	"vietnam":["vietnam"],
-	"country:'Vietnam'":["vietnam"],
+	":vietnam":["vietnam"],
 	"vietnamese":["vietnam"],
 	"*vigilant":["vigilante", "vigilantism", "justice"],
 	"*virus":["virus"],
@@ -1367,7 +1362,7 @@ imdbKeywords = {
 	"*voyeur":["voyeurism"],
 
 	#============================================ W =============================================
-	"genres:'War'":["war", "war movie", "wartime", "military"],
+	":war":["war", "war movie", "wartime", "military"],
 	"world-war-two":["wwii", "world war ii"],
 	"world-war-one":["world war i"],
 	"cold-war-era":["cold war"],
@@ -1394,7 +1389,7 @@ imdbKeywords = {
 	"*heroin-":["weed", "drugs", "marijuana"],
 	"*drug":["weed", "drugs", "marijuana"],
 	"*werewolf":["werewolf", "werewolves"],
-	"genres:'Western'":["western"],
+	":western":["western"],
 	"*witch":["witch", "witches"],
 	"*wizard":["wizards"],
 	"*working-class":["working class"],
@@ -1517,3 +1512,209 @@ imdbIgnore = {
 	"*witch":["*switch", "*twitch"],
 	"*virgin":["*virginia", "*virgin-mary"]
 }
+
+def getMongoSearch(key):
+	if key == ":1920s":
+		return {"$and":[{'year':{'$gte':'1920'}},{'year':{'$lt':'1930'}}]}
+	if key == ":1930s":
+		return {"$and":[{'year':{'$gte':'1930'}},{'year':{'$lt':'1940'}}]}
+	if key == ":1950s":
+		return {"$and":[{'year':{'$gte':'1950'}},{'year':{'$lt':'1960'}}]}
+	if key == ":1960s":
+		return {"$and":[{'year':{'$gte':'1960'}},{'year':{'$lt':'1970'}}]}
+	if key == ":1970s":
+		return {"$and":[{'year':{'$gte':'1970'}},{'year':{'$lt':'1980'}}]}
+	if key == ":1980s":
+		return {"$and":[{'year':{'$gte':'1980'}},{'year':{'$lt':'1990'}}]}
+	if key == ":aardman":
+		return {"companies":'Aardman Animations'}
+	if key == ":pixar":
+		return {"companies":"Pixar Animation Studios"}
+	if key == ":dc comics":
+		return {"companies":"DC Comics"}
+	if key == ":studio ghibli":
+		return {"companies":"Studio Ghibli"}
+	if key == ":mtv":
+		return {"$and":[{'companies':{"$regex":"MTV"}},{'companies':{'$not':{"$regex":"Magyar Televízió Müvelödési Föszerkesztöség"}}},{'companies':{'$not':{"$regex":"Mainosteleviso"}}}]}
+	if key == ":action":
+		return {"genres":"Action"}
+	if key == ":adventure":
+		return {"genres":"Adventure"}
+	if key == ":animation":
+		return {"genres":"Animation"}
+	if key == ":comedy":
+		return {"genres":"Comedy"}
+	if key == ":horror":
+		return {"genres":"Horror"}
+	if key == ":crime":
+		return {"genres":"Crime"}
+	if key == ":documentary":
+		return {"genres":"Documentary"}
+	if key == ":fantasy":
+		return {"genres":"Fantasy"}
+	if key == ":history":
+		return {"genres":"History"}
+	if key == ":music":
+		return {"genres":"Music"}
+	if key == ":musical":
+		return {"genres":"Musical"}
+	if key == ":mystery":
+		return {"genres":"Mystery"}
+	if key == ":noir":
+		return {"genres":"Film-Noir"}
+	if key == ":reality-tv":
+		return {"genres":"Reality-TV"}
+	if key == ":romance":
+		return {"genres":"Romance"}
+	if key == ":sci-fi":
+		return {"genres":"Sci-Fi"}
+	if key == ":sport":
+		return {"genres":"Sport"}
+	if key == ":thriller":
+		return {"genres":"Thriller"}
+	if key == ":war":
+		return {"genres":"War"}
+	if key == ":western":
+		return {"genres":"Western"}
+	if key == ":drama":
+		return {"genres":"Drama"}
+	if key == ":family":
+		return {"genres":"Family"}
+	if key == ":australia":
+		return {"country":'Australia'}
+	if key == ":almodovar":
+		return {"crew":'Pedro Almodóvar'}
+	if key == ":amy":
+		return {"cast":'Amy Smart'}
+	if key == ":arnold":
+		return {"cast":'Arnold Schwarzenegger'}
+	if key == ":ethan":
+		return {"crew":"Ethan Coen"}
+	if key == ":joel":
+		return {"crew":"Joel Coen"}
+	if key == ":johnny":
+		return {"crew":"Johnny Depp"}
+	if key == ":tim":
+		return {"crew":"Tim Burton"}
+	if key == ":ennio":
+		return {"crew":"Ennio Morricone"}
+	if key == ":terry":
+		return {"$or":[{"crew":"Terry Gilliam"}, {"cast":"Terry Gilliam"}]}
+	if key == ":alfred":
+		return {"crew":"Alfred Hitchcock"}
+	if key == ":stanley":
+		return {"crew":"Stanley Kubrick"}
+	if key == ":david":
+		return {"crew":"David Lynch"}
+	if key == ":hayao":
+		return {"crew":"Hayao Miyazaki"}
+	if key == ":niel":
+		return {"crew":"Niel Gaiman"}
+	if key == ":robert":
+		return {"crew":"Robert Ludlum"}
+	if key == ":sophia":
+		return {"$or":[{"crew":"Sophia Copolla"}, {"cast":"Sophia Copolla"}]}
+	if key == ":steven":
+		return {"crew":"Steven Spielberg"}
+	if key == ":quentin":
+		return {"crew":"Quentin Tarantino"}
+	if key == ":tom":
+		return {"crew":"Tom Clancy"}
+	if key == ":truman":
+		return {"crew":"Truman Capote"}
+	if key == ":groucho":
+		return {"cast":"Groucho Marx"}
+	if key == ":harpo":
+		return {"cast":"Harpo Marx"}
+	if key == ":chico":
+		return {"cast":"Chico Marx"}
+	if key == ":zeppo":
+		return {"cast":"Zeppo Marx"}
+	if key == ":emma":
+		return {"cast":"Emma Watson"}
+	if key == ":liv":
+		return {"cast":"Liv Tyler"}
+	if key == ":robert downey":
+		return {"cast":"Robert Downey Jr."}
+	if key == ":biography":
+		return {"genres":"Biography"}
+	if key == ":india":
+		return {"country":"India"}
+	if key == ":brazil":
+		return {"country":"Brazil"}
+	if key == ":uk":
+		return {"country":"UK"}
+	if key == ":canada":
+		return {"country":"Canada"}
+	if key == ":china":
+		return {"country":"China"}
+	if key == ":cuba":
+		return {"country":"Cuba"}
+	if key == ":egypt":
+		return {"country":"Egypt"}
+	if key == ":england":
+		return {"country":"England"}
+	if key == ":finland":
+		return {"country":"Finland"}
+	if key == ":france":
+		return {"country":"France"}
+	if key == ":germany":
+		return {"country":"Germany"}
+	if key == ":iran":
+		return {"country":"Iran"}
+	if key == ":iraq":
+		return {"country":"Iraq"}
+	if key == ":israel":
+		return {"country":"Israel"}
+	if key == ":ireland":
+		return {"country":"Ireland"}
+	if key == ":italy":
+		return {"country":"Italy"}
+	if key == ":japan":
+		return {"country":"Japan"}
+	if key == ":mexico":
+		return {"country":"Mexico"}
+	if key == ":new zealand":
+		return {"country":"New Zealand"}
+	if key == ":palestine":
+		return {"country":"Palestine"}
+	if key == ":poland":
+		return {"country":"Poland"}
+	if key == ":russia":
+		return {"country":"Russia"}
+	if key == ":scotland":
+		return {"country":"Scotland"}
+	if key == ":spain":
+		return {"country":"Spain"}
+	if key == ":sweden":
+		return {"country":"Sweden"}
+	if key == ":vietnam":
+		return {"country":"Vietnam"}
+	if key == ":disney":
+		return {"companies":{"$regex":"Disney"}}
+	if key == ":harry potter":
+		return {"title":{"$regex":"Harry Potter"}}
+	if key == ":indiana jones":
+		return {"title":{"$regex":"Indiana Jones"}}
+	if key == ":james bond":
+		return {"title":{"$regex":"James Bond"}}
+	if key == ":marvel":
+		return {"companies":{"$regex":"Marvel"}}
+	if key == ":monty python":
+		return {"title":{"$regex":"Monty Python"}}
+	if key == ":muppets":
+		return {"title":{"$regex":"Muppet"}}
+	if key == ":peter pan":
+		return {"title":{"$regex":"Peter Pan"}}
+	if key == ":snl":
+		return {"$or":[{"title":{"$regex":"SNL"}},{"title":{"$regex":"Saturday Night Live"}}]}
+	if key == ":star trek":
+		return {"title":{"$regex":"Star Trek"}}
+	if key == ":star wars":
+		return {"title":{"$regex":"Star Wars"}}
+	if key == ":family drama":
+		return {"genres":{'$all':['Family','Drama']}}
+	if key == ":noir thriller":
+		return {"genres":{'$all':['Thriller','Film-Noir']}}
+	if key == ":romantic comedy":
+		return {"genres":{'$all':['Romance','Comedy']}}

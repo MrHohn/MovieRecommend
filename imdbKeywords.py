@@ -2,6 +2,7 @@ import imdbUtil
 import time
 import csv
 import pymongo
+import imdbMovieLensTags
 
 # Parsing of IMDB keywords.list file.
 # Adds fields to movie database:
@@ -122,3 +123,68 @@ def collectKeywords(mongo):
 
 	print("[*] Complete (%0.2fs)" % (time.time()-startTime))
 	print("[*] Added", str(keywordCount), "items to the keywords collection.")
+
+def processMovieLensLinks(mongo):
+	newCounts = {}
+	newKeywords = set()
+	bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db["movies"], ordered=False)
+
+	print("=== Starting MovieLens tag integration ===")
+	startTime = time.time()
+	# Update movie keywords lists based on data in imdbMovieLensTags.py
+	for keyFilter in imdbMovieLensTags.imdbKeywords:
+		if keyFilter[0] == "*":
+			# Wildcard search
+			findFilt = {"keywords":{"$regex":sanitizeRegex(keyFilter[1:])}}
+
+			if keyFilter in imdbMovieLensTags.imdbIgnore:
+				ignoreFilters = imdbMovieLensTags.imdbIgnore[keyFilter]
+				andfilt = [findFilt.copy()]
+				for ignore in ignoreFilters:
+					if ignore[0] == "*":
+						andfilt.append({"keywords":{"$not":{"$regex":sanitizeRegex(ignore[1:])}}})
+					else:
+						andfilt.append({"keywords":{"$not":ignore}})
+				findfilt = {"$and":andfilt}
+
+			bulkPayload.find( findFilt ).update( {
+							"$addToSet": { "keywords": { "$each":imdbMovieLensTags.imdbKeywords[keyFilter] } }
+						} )
+
+		elif keyFilter[0] == ":":
+			# Mongo search
+			bulkPayload.find( imdbMovieLensTags.getMongoSearch(keyFilter) ).update( {
+							"$addToSet": { "keywords": { "$each":imdbMovieLensTags.imdbKeywords[keyFilter] } }
+						} )
+
+		else:
+			# Simple search
+			bulkPayload.find( {"keywords":keyFilter} ).update( {
+							"$addToSet": { "keywords": { "$each":imdbMovieLensTags.imdbKeywords[keyFilter] } }
+						} )
+
+		for keyword in imdbMovieLensTags.imdbKeywords[keyFilter]:
+			newKeywords.add(keyword)
+
+	bulkPayload.execute()
+	print("[*] Complete (%0.2fs)" % (time.time()-startTime))
+
+	# Update keywords and counts in the keywords database
+	print("=== Updating keyword counts ===")
+	startTime = time.time()
+
+	bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db["keywords"], ordered=False)
+	for keyword in newKeywords:
+		bulkPayload.insert({"keyword":keyword, "count":0})
+	bulkPayload.execute()
+
+	bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db["keywords"], ordered=False)
+	allKeywords = mongo.db["keywords"].find({})
+	for entry in allKeywords:
+		keyword = entry["keyword"]
+		bulkPayload.find({"keyword":keyword}).update({"$set":{"count":mongo.db["movies"].find( {"keywords":keyword} ).count()}})
+	bulkPayload.execute()
+	print("[*] Complete (%0.2fs)" % (time.time()-startTime))
+
+def sanitizeRegex(regex):
+	return regex.replace("(","\(").replace(")","\)")
