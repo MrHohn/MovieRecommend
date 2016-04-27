@@ -133,6 +133,7 @@ class MovieRecommend(object):
                 tags_dict[tag] = tags_from_tweets[tag]
             else:
                 tags_dict[tag] += tags_from_tweets[tag]
+        print("[MovieRecommend] Found " + str(len(tags_dict)) + " tags from profile.")
         print(tags_dict)
         return tags_dict
 
@@ -495,19 +496,22 @@ class MovieRecommend(object):
     # the core idea is collaborative filtering (comparing movie occurrences)
     @classmethod
     def recommend_movies_based_on_history(self, movies):
+        # convert imdb titles into mids
+        target_history = set()
+        for movie in movies:
+            cur_movie = self.db["movie"].find_one({"title_full": movie})
+            if cur_movie is None:
+                continue
+            target_history.add(cur_movie["mid"])
+
         print("[MovieRecommend] Start retrieve similar users...")
-        most_similar_users = self.get_similar_users_by_history(movies, movieid=False)
+        most_similar_users = self.get_similar_users_by_history(target_history)
         if len(most_similar_users) == 0:
             print("[MovieRecommend] Recommend failed due to insufficient history.")
             return []
 
         print("[MovieRecommend] Similar users retrieved.")
         print("[MovieRecommend] Start generating recommend movies...")
-        # gain target user history
-        target_history = set()
-        for movie in movies:
-            cur_movie = self.db["movie"].find_one({"title": movie})
-            target_history.add(cur_movie["mid"])
 
         movies_count = {}
         for cur_user_id in most_similar_users:
@@ -544,6 +548,8 @@ class MovieRecommend(object):
         else:
             print("[MovieRecommend] Similar users not calculated.")
             most_similar_users = self.get_similar_users(userID)
+        if len(most_similar_users) == 0:
+            return []
         print("[MovieRecommend] Similar users retrieved.")
         print("[MovieRecommend] Start generating recommend movies...")
         # gain target user history
@@ -591,20 +597,12 @@ class MovieRecommend(object):
     # return top-10 similar users given user history
     # the core idea is cosine similarity between user like list
     @classmethod
-    def get_similar_users_by_history(self, target_like, target_id=0, movieid=True):
+    def get_similar_users_by_history(self, target_like, target_id=0):
         print("[MovieRecommend] Start calculating similar users...")
         if len(target_like) < 5:
             print("[MovieRecommend] Not enough rating history: " + str(len(target_like)) + ".")
             return []
         print("[MovieRecommend] Sufficient history: " + str(len(target_like))+ ", now start calculating...")
-
-        # convert movie titles to movie ids
-        if not movieid:
-            target_like_temp = set()
-            for title in target_like:
-                cur_movie = self.db["movie"].find_one({"title": title})
-                target_like_temp.add(cur_movie["mid"])
-            target_like = target_like_temp
 
         progressInterval = 10000  # How often should we print a progress report to the console?
         progressTotal = 247753    # Approximate number of total users
@@ -618,7 +616,7 @@ class MovieRecommend(object):
         for cur_user in cursor:
             count += 1
             if count % progressInterval == 0:
-                print("[MovieRecommend] %6d lines processed so far. (%d%%) (%0.2fs)" % ((count, int(count * 100 / progressTotal), time.time() - startTime)))
+                print("[MovieRecommend] %6d users processed so far. (%d%%) (%0.2fs)" % ((count, int(count * 100 / progressTotal), time.time() - startTime)))
 
             cur_id = cur_user["uid"]
             if cur_id == target_id:
@@ -633,10 +631,10 @@ class MovieRecommend(object):
             cur_similarity = self.cosine_similarity(cur_like, target_like)
             candidates.put(Candidate(cur_id, cur_similarity))
             # maintain the pool size
-            if candidates.qsize() > 10:
+            if candidates.qsize() > 20:
                 candidates.get()
 
-        # now print out and return top 10 candidates
+        # now print out and return top 20 candidates
         most_similar_users = []
         while not candidates.empty():
             cur_user = candidates.get()
@@ -682,20 +680,6 @@ def main():
 
     # # -----------------------------------------------------------------
 
-    # # unit test for recommend_movies_based_on_history()
-    # print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_history() *****")
-    # user_history = []
-    # user_history.append("Toy Story (1995)")
-    # user_history.append("Furious 7 (2015)")
-    # user_history.append("Fifty Shades of Grey (2015)")
-    # user_history.append("Big Hero 6 (2014)")
-    # user_history.append("X-Men: Days of Future Past (2014)")
-    # user_history.append("The Lego Movie (2014)")
-    # recommends = recommender.recommend_movies_based_on_history(user_history)
-    # recommender.print_recommend(recommends)
-
-    # # -----------------------------------------------------------------
-
     # # unit test, input tags:
     # # [28, 387, 599, 704, 794]
     # # ["adventure", "feel-good", "life", "new york city", "police"]
@@ -732,16 +716,16 @@ def main():
 
     # -----------------------------------------------------------------
 
-    print("[MovieRecommend] ***** Unit test for recommend_movies_for_twitter_integrated() *****")
-    user_screen_name = "BrunoMars"
+    # print("[MovieRecommend] ***** Unit test for recommend_movies_for_twitter_integrated() *****")
+    # # user_screen_name = "BrunoMars"
     # user_screen_name = "LeoDiCaprio"
-    # user_screen_name = "BarackObama"
-    # user_screen_name = "sundarpichai"
-    # user_screen_name = "BillGates"
-    # user_screen_name = "jhsdfjak"
-    recommends = recommender.recommend_movies_for_twitter_integrated(user_screen_name)
-    for recommend in recommends:
-        print(recommend.encode("utf8"))
+    # # user_screen_name = "BarackObama"
+    # # user_screen_name = "sundarpichai"
+    # # user_screen_name = "BillGates"
+    # # user_screen_name = "jhsdfjak"
+    # recommends = recommender.recommend_movies_for_twitter_integrated(user_screen_name)
+    # for recommend in recommends:
+    #     print(recommend.encode("utf8"))
 
     # -----------------------------------------------------------------
 
@@ -752,6 +736,26 @@ def main():
     # recommends = recommender.recommend_movies_based_on_tags_integrated(tags)
     # for recommend in recommends:
     #     print(recommend.encode("utf8"))
+
+    # # -----------------------------------------------------------------
+
+    # unit test for recommend_movies_based_on_history()
+    print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_history() *****")
+    user_history = []
+    user_history.append("Toy Story (1995)")
+    user_history.append("Big Hero 6 (2014)")
+    user_history.append("X-Men: Days of Future Past (2014)")
+    user_history.append("The Lego Movie (2014)")
+    user_history.append("The Secret Life of Walter Mitty (2013)")
+    user_history.append("Death Note: Desu nto (2006)")
+    user_history.append("Zombieland (2009)")
+    user_history.append("Fifty Shades of Grey (2015)")
+    user_history.append("The Maze Runner (2014)")
+
+    recommends = recommender.recommend_movies_based_on_history(user_history)
+    recommends = recommender.get_titles_by_mids(recommends)
+    for recommend in recommends:
+        print(recommend.encode("utf8"))
 
 if __name__ == "__main__":
     main()
