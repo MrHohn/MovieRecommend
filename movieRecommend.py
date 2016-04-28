@@ -2,6 +2,7 @@ import time
 import math
 import queue
 import pymongo
+import threading
 from DataService import Mongo
 from TwitterService import Tweepy
 from TweetAnalytics import TextAnalytics
@@ -277,7 +278,7 @@ class MovieRecommend(object):
     def recommend_movies_based_on_tags_integrated(self, tags):
         movies_score = {}
 
-        total_movies_num = 121492   # num of movies with tags (real)
+        total_movies_num = 121479   # num of movies with tags (real)
         for tag in tags:
             cur_tag = self.db_integration["normalized_tags"].find_one({"tag": tag})
             if cur_tag is None:
@@ -598,7 +599,7 @@ class MovieRecommend(object):
             print("[MovieRecommend] Stored similar users into DB.")
         return most_similar_users
 
-    # return top-10 similar users given user history
+    # return top-20 similar users given user history
     # the core idea is cosine similarity between user like list
     @classmethod
     def get_similar_users_by_history(self, target_like, target_id=0):
@@ -607,36 +608,46 @@ class MovieRecommend(object):
             print("[MovieRecommend] Not enough rating history: " + str(len(target_like)) + ".")
             return []
         print("[MovieRecommend] Sufficient history: " + str(len(target_like))+ ", now start calculating...")
-
-        progressInterval = 10000  # How often should we print a progress report to the console?
-        progressTotal = 247753    # Approximate number of total users
-        count = 0                 # Counter for progress
-
-        # Scan through all users in database and calculate similarity
         startTime = time.time()
-        # maintain a min heap for top k candidates
+
+        thread_num = 2
+        start_pool = []
+        end_pool = []
+        step = int(247753 / thread_num)
+        for i in range(thread_num):
+            start_pool.append(i * step)
+            end_pool.append((i + 1) * step - 1)
+
+        # for i in range(len(start_pool)):
+        #     print("start: " + str(start_pool[i]) + ", end: " + str(end_pool[i]))
+        # return []
+
+        # allocate mids to all threads
+        print("[MovieRecommend] Allocating tasks to all threads...")
+        thread_poll = []
+        res_list = []
+        res_lock = threading.Lock()
+        for i in range(thread_num):
+            thread_poll.append(get_similar_thread(i, target_like, res_list, res_lock, start_pool[i], end_pool[i], thread_num, self.mongo))
+
+        print("[MovieRecommend] Starting all threads...")
+        for thread in thread_poll:
+            thread.start()
+
+        # Wait for all threads to complete
+        for thread in thread_poll:
+            thread.join()
+
+        # now compete the winners from all threads
         candidates = queue.PriorityQueue()
-        cursor = self.db["user_rate"].find({})
-        for cur_user in cursor:
-            count += 1
-            if count % progressInterval == 0:
-                print("[MovieRecommend] %6d users processed so far. (%d%%) (%0.2fs)" % ((count, int(count * 100 / progressTotal), time.time() - startTime)))
-
-            cur_id = cur_user["uid"]
-            if cur_id == target_id:
-                continue
-
-            cur_like = set()
-            for rating in cur_user["ratings"]:
-                if rating[1] >= 3.5:
-                    cur_like.add(rating[0])
-            if len(cur_like) < 5:
-                continue
-            cur_similarity = self.cosine_similarity(cur_like, target_like)
-            candidates.put(Candidate(cur_id, cur_similarity))
-            # maintain the pool size
-            if candidates.qsize() > 20:
-                candidates.get()
+        for cur_dict in res_list:
+            cur_ids = cur_dict["ids"]
+            cur_scores = cur_dict["scores"]
+            for i in range(len(cur_ids)):
+                candidates.put(Candidate(cur_ids[i], cur_scores[i]))
+                # maintain the pool size
+                if candidates.qsize() > 20:
+                    candidates.get()
 
         # now print out and return top 20 candidates
         most_similar_users = []
@@ -660,6 +671,67 @@ class MovieRecommend(object):
             if element in set2:
                 count += 1
         return count
+
+class get_similar_thread(threading.Thread):
+    def __init__(self, threadID, target_like, res_list, res_lock, start, end, thread_num, mongo):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.target_like = target_like
+        self.res_list = res_list
+        self.res_lock = res_lock
+        self.start_pos = start
+        self.end_pos = end
+        self.thread_num = thread_num
+        self.mongo = mongo
+        self.db = mongo.client["movieRecommend"]
+
+    def run(self):
+        print("[MovieRecommend] Start calculating similar users... [" + str(self.threadID) + "]")
+
+        progressInterval = 10000
+        progressTotal = 247753
+        count = 0
+        # Scan through all users in database and calculate similarity
+        startTime = time.time()
+        # maintain a min heap for top k candidates
+        candidates = queue.PriorityQueue()
+        cursor = self.db["user_rate"].find({})
+        for cur_user in cursor:
+            count += 1
+            if count < self.start_pos:
+                continue
+            if count > self.end_pos:
+                break
+            if count % progressInterval == 0:
+                print("[MovieRecommend] %6d users processed so far. (%d%%) (%0.2fs)" % ((count, int(count * 100 / progressTotal), time.time() - startTime)))
+
+            cur_id = cur_user["uid"]
+            cur_like = set()
+            for rating in cur_user["ratings"]:
+                if rating[1] >= 3.5:
+                    cur_like.add(rating[0])
+            if len(cur_like) < 5:
+                continue
+            cur_similarity = MovieRecommend.cosine_similarity(cur_like, self.target_like)
+            candidates.put(Candidate(cur_id, cur_similarity))
+            # maintain the pool size
+            if candidates.qsize() > 20:
+                candidates.get()
+
+        # now print out and return top 20 candidates
+        most_similar_users_ids = []
+        most_similar_users_scores = []
+        while not candidates.empty():
+            cur_user = candidates.get()
+            most_similar_users_ids.append(cur_user.cid)
+            most_similar_users_scores.append(cur_user.score)
+        print("[MovieRecommend] Calculation complete (%0.2fs)" % (time.time() - startTime))
+        cur_dict = {}
+        cur_dict["ids"] = most_similar_users_ids
+        cur_dict["scores"] = most_similar_users_scores
+        self.res_lock.acquire()
+        self.res_list.append(cur_dict)
+        self.res_lock.release()
 
 class Candidate(object):
     def __init__(self, cid, score):
@@ -718,18 +790,18 @@ def main():
     # # recommender.print_recommend(recommends)
     # print(recommender.get_titles_by_mids(recommends))
 
-    # -----------------------------------------------------------------
+    # # -----------------------------------------------------------------
 
-    print("[MovieRecommend] ***** Unit test for recommend_movies_for_twitter_integrated() *****")
-    user_screen_name = "BrunoMars"
-    # user_screen_name = "LeoDiCaprio"
-    # user_screen_name = "BarackObama"
-    # user_screen_name = "sundarpichai"
-    # user_screen_name = "BillGates"
-    # user_screen_name = "jhsdfjak"
-    recommends = recommender.recommend_movies_for_twitter_integrated(user_screen_name)
-    for recommend in recommends:
-        print(recommend.encode("utf8"))
+    # print("[MovieRecommend] ***** Unit test for recommend_movies_for_twitter_integrated() *****")
+    # user_screen_name = "BrunoMars"
+    # # user_screen_name = "LeoDiCaprio"
+    # # user_screen_name = "BarackObama"
+    # # user_screen_name = "sundarpichai"
+    # # user_screen_name = "BillGates"
+    # # user_screen_name = "jhsdfjak"
+    # recommends = recommender.recommend_movies_for_twitter_integrated(user_screen_name)
+    # for recommend in recommends:
+    #     print(recommend.encode("utf8"))
 
     # # -----------------------------------------------------------------
 
@@ -741,25 +813,25 @@ def main():
     # for recommend in recommends:
     #     print(recommend.encode("utf8"))
 
-    # # # -----------------------------------------------------------------
+    # # -----------------------------------------------------------------
 
-    # # unit test for recommend_movies_based_on_history()
-    # print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_history() *****")
-    # user_history = []
-    # user_history.append("Toy Story (1995)")
-    # user_history.append("Big Hero 6 (2014)")
-    # user_history.append("X-Men: Days of Future Past (2014)")
-    # user_history.append("The Lego Movie (2014)")
-    # user_history.append("The Secret Life of Walter Mitty (2013)")
-    # user_history.append("Death Note: Desu nto (2006)")
-    # user_history.append("Zombieland (2009)")
-    # user_history.append("Fifty Shades of Grey (2015)")
-    # user_history.append("The Maze Runner (2014)")
+    # unit test for recommend_movies_based_on_history()
+    print("[MovieRecommend] ***** Unit test for recommend_movies_based_on_history() *****")
+    user_history = []
+    user_history.append("Toy Story (1995)")
+    user_history.append("Big Hero 6 (2014)")
+    user_history.append("X-Men: Days of Future Past (2014)")
+    user_history.append("The Lego Movie (2014)")
+    user_history.append("The Secret Life of Walter Mitty (2013)")
+    user_history.append("Death Note: Desu nto (2006)")
+    user_history.append("Zombieland (2009)")
+    user_history.append("Fifty Shades of Grey (2015)")
+    user_history.append("The Maze Runner (2014)")
 
-    # recommends = recommender.recommend_movies_based_on_history(user_history)
-    # recommends = recommender.get_titles_by_mids(recommends)
-    # for recommend in recommends:
-    #     print(recommend.encode("utf8"))
+    recommends = recommender.recommend_movies_based_on_history(user_history)
+    recommends = recommender.get_titles_by_mids(recommends)
+    for recommend in recommends:
+        print(recommend.encode("utf8"))
 
 if __name__ == "__main__":
     main()
