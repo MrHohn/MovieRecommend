@@ -193,7 +193,7 @@ def processMovieLensLinks(mongo):
 		keyword = entry["keyword"]
 		if keyword not in newKeywords and filterMatches(keyword) == set():
 			bulkPayload.find({"keyword":keyword}).remove()
-		else:
+		else if keyword in newKeywords:
 			bulkPayload.find({"keyword":keyword}).update({"$set":{"count":mongo.db["movies"].find( {"keywords":keyword} ).count()}})
 		count += 1
 		if count % progressInterval == 0:
