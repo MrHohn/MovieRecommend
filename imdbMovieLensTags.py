@@ -7,6 +7,7 @@
 # 		- Keys with a : in front should query the IMDB database using the respective query in getMongoSearch()
 #
 # Also see imdbIgnore at the bottom of this file.
+import re
 
 imdbKeywords = {
 	#============================================ 0-9 =============================================
@@ -1535,7 +1536,7 @@ def getMongoSearch(key):
 	if key == ":studio ghibli":
 		return {"companies":"Studio Ghibli"}
 	if key == ":mtv":
-		return {"$and":[{'companies':{"$regex":"MTV"}},{'companies':{'$not':{"$regex":"Magyar Televízió Müvelödési Föszerkesztöség"}}},{'companies':{'$not':{"$regex":"Mainosteleviso"}}}]}
+		return {"$and":[{'companies':{"$regex":"MTV"}},{'companies':{'$not':re.compile("Magyar Televízió Müvelödési Föszerkesztöség")}},{'companies':{'$not':re.compile("Mainosteleviso")}}]}
 	if key == ":action":
 		return {"genres":"Action"}
 	if key == ":adventure":
