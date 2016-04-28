@@ -138,6 +138,7 @@ def processMovieLensLinks(mongo):
 	startPercent = 0 #Change this to value between 0.0 and 1.0 to start the process mid-way.
 	offset = int(movieCount*startPercent)
 	interval = 9000
+	doMongo = True
 	progressInterval = int(movieCount/20)
 
 	while offset < movieCount:
@@ -152,7 +153,7 @@ def processMovieLensLinks(mongo):
 					filteredKeywords.add(match)
 
 			bulkPayload.find({"imdbtitle":movie["imdbtitle"]}).update({"$set":{"keywords":list(filteredKeywords)}})
-			
+
 			if count % progressInterval == 0:
 				print(str(count), "movie's keywords filtered so far. ("+str(int((startPercent+(count/movieCount))*100))+"%%) (%0.2fs)" % (time.time()-startTime))
 		
@@ -163,7 +164,7 @@ def processMovieLensLinks(mongo):
 	# Pass 2 : Specaial Mongo query filters
 	print("Pass 2: Mongo query filters")
 	for keyFilter in imdbMovieLensTags.imdbKeywords:
-		if keyFilter[0] == ":":
+		if keyFilter[0] == ":" and doMongo:
 			# Mongo search
 			mongo.db["movies"].update_many( imdbMovieLensTags.getMongoSearch(keyFilter), {
 							"$addToSet": { "keywords": { "$each":imdbMovieLensTags.imdbKeywords[keyFilter] } }
@@ -183,14 +184,20 @@ def processMovieLensLinks(mongo):
 		bulkPayload.insert({"keyword":keyword, "count":0})
 	bulkPayload.execute()
 
-	bulkPayload = pymongo.bulk.BulkOperationBuilder(mongo.db["keywords"], ordered=False)
+	bulkPayload = mongo.db["keywords"].initialize_ordered_bulk_op()
 	allKeywords = mongo.db["keywords"].find({})
+	keywordsCount = allKeywords.count()
+	count = 0
+	progressInterval = int(keywordsCount/20)
 	for entry in allKeywords:
 		keyword = entry["keyword"]
 		if keyword not in newKeywords and filterMatches(keyword) == set():
-			bulkPayload.remove({"keyword":keyword})
+			bulkPayload.find({"keyword":keyword}).remove()
 		else:
 			bulkPayload.find({"keyword":keyword}).update({"$set":{"count":mongo.db["movies"].find( {"keywords":keyword} ).count()}})
+		count += 1
+		if count % progressInterval == 0:
+			print(str(count), "keywords refactored. ("+str(int((count/keywordsCount)*100))+"%%) (%0.2fs)" % (time.time()-startTime))
 	bulkPayload.execute()
 	print("[*] Complete (%0.2fs)" % (time.time()-startTime))
 
