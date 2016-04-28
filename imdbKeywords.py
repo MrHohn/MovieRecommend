@@ -143,6 +143,7 @@ def processMovieLensLinks(mongo):
 	while offset < movieCount:
 		movieChunk = mongo.db["movies"].find({}, {"imdbtitle":1, "keywords":1}).skip(offset).limit(interval)
 		for movie in movieChunk:
+			count += 1
 			if not "keywords" in movie:
 				continue
 			filteredKeywords = set()
@@ -151,8 +152,7 @@ def processMovieLensLinks(mongo):
 					filteredKeywords.add(match)
 
 			bulkPayload.find({"imdbtitle":movie["imdbtitle"]}).update({"$set":{"keywords":list(filteredKeywords)}})
-
-			count += 1
+			
 			if count % progressInterval == 0:
 				print(str(count), "movie's keywords filtered so far. ("+str(int((startPercent+(count/movieCount))*100))+"%%) (%0.2fs)" % (time.time()-startTime))
 		
