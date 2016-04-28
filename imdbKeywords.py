@@ -125,7 +125,6 @@ def collectKeywords(mongo):
 	print("[*] Added", str(keywordCount), "items to the keywords collection.")
 
 def processMovieLensLinks(mongo):
-	newKeywordList = set()
 	newKeywords = set()
 
 	print("=== Starting MovieLens tag integration ===")
@@ -136,7 +135,8 @@ def processMovieLensLinks(mongo):
 	# Pass 1: Simple and wildcard filters
 	movieCount = mongo.db["movies"].find({}).count()
 	count = 0
-	offset = 0
+	startPercent = 0 #Change this to value between 0.0 and 1.0 to start the process mid-way.
+	offset = int(movieCount*startPercent)
 	interval = 9000
 	progressInterval = int(movieCount/20)
 
@@ -147,29 +147,9 @@ def processMovieLensLinks(mongo):
 				continue
 			filteredKeywords = set()
 			for keyword in movie["keywords"]:
-				for keyFilter in imdbMovieLensTags.imdbKeywords:
-					if keyFilter[0] == "*":
-						# Wildcard search
-						if keyFilter in imdbMovieLensTags.imdbIgnore:
-							ignoreFilters = imdbMovieLensTags.imdbIgnore[keyFilter]
-							willIgnore = False
-							for ignore in ignoreFilters:
-								if ignore[1:] in keyword:
-									willIgnore = True
-									break
-							if willIgnore:
-								continue
-						if keyFilter[1:] in keyword:
-							filteredKeywords.add(keyword)
-							for mlKeyword in imdbMovieLensTags.imdbKeywords[keyFilter]:
-								filteredKeywords.add(keyword)
-					elif keyFilter[0] != ":":
-						if keyword == keyFilter:
-							filteredKeywords.add(keyword)
-							for mlKeyword in imdbMovieLensTags.imdbKeywords[keyFilter]:
-								filteredKeywords.add(keyword)
+				for match in filterMatches(keyword):
+					filteredKeywords.add(match)
 
-			newKeywordList = newKeywordList | filteredKeywords
 			bulkPayload.find({"imdbtitle":movie["imdbtitle"]}).update({"$set":{"keywords":list(filteredKeywords)}})
 
 			count += 1
@@ -192,7 +172,6 @@ def processMovieLensLinks(mongo):
 		for keyword in imdbMovieLensTags.imdbKeywords[keyFilter]:
 			newKeywords.add(keyword)
 
-	newKeywordList = newKeywordList | newKeywords
 	print("[*] Complete (%0.2fs)" % (time.time()-startTime))
 
 	# Update keywords and counts in the keywords database
@@ -208,12 +187,38 @@ def processMovieLensLinks(mongo):
 	allKeywords = mongo.db["keywords"].find({})
 	for entry in allKeywords:
 		keyword = entry["keyword"]
-		if not keyword in newKeywordList:
+		if keyword not in newKeywords and filterMatches(keyword) == set():
 			bulkPayload.remove({"keyword":keyword})
 		else:
 			bulkPayload.find({"keyword":keyword}).update({"$set":{"count":mongo.db["movies"].find( {"keywords":keyword} ).count()}})
 	bulkPayload.execute()
 	print("[*] Complete (%0.2fs)" % (time.time()-startTime))
+
+def filterMatches(keyword):
+	returnList = set()
+	for keyFilter in imdbMovieLensTags.imdbKeywords:
+		if keyFilter[0] == "*":
+			# Wildcard search
+			if keyFilter in imdbMovieLensTags.imdbIgnore:
+				ignoreFilters = imdbMovieLensTags.imdbIgnore[keyFilter]
+				willIgnore = False
+				for ignore in ignoreFilters:
+					if ignore[1:] in keyword:
+						willIgnore = True
+						break
+				if willIgnore:
+					continue
+			if keyFilter[1:] in keyword:
+				returnList.add(keyword)
+				for mlKeyword in imdbMovieLensTags.imdbKeywords[keyFilter]:
+					returnList.add(keyword)
+		elif keyFilter[0] != ":":
+			if keyword == keyFilter:
+				returnList.add(keyword)
+				for mlKeyword in imdbMovieLensTags.imdbKeywords[keyFilter]:
+					returnList.add(keyword)
+	return returnList
+
 
 def sanitizeRegex(regex):
 	return regex.replace("(","\(").replace(")","\)")
