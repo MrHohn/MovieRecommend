@@ -144,10 +144,10 @@ def processMovieLensLinks(mongo):
 	# Pass 1: Simple and wildcard filters
 	movieCount = mongo.db["movies"].find({}).count()
 	count = 0
-	startPercent = 1 #Change this to value between 0.0 and 1.0 to start the process mid-way.
+	startPercent = 0 #Change this to value between 0.0 and 1.0 to start the process mid-way.
 	offset = int(movieCount*startPercent)
 	interval = 9000
-	doMongo = False
+	doMongo = True
 	progressInterval = int(movieCount/20)
 
 	while offset < movieCount:
