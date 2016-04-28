@@ -216,7 +216,10 @@ class MovieApp:
 
 		ratingText = ""
 		if "imdbRating" in result:
-			rating = round(float(result["imdbRating"]))
+			if result["imdbRating"] == "N/A":
+				rating = 0
+			else:
+				rating = round(float(result["imdbRating"]))
 			for _ in range(rating):
 				ratingText += "★"
 			for _ in range(10-rating):
@@ -473,7 +476,7 @@ class MovieApp:
 				foundImage = True
 
 		if not foundImage:
-			print("[UI] Poster not found.")
+			# print("[UI] Poster not found.")
 			localpath = "img/blank.jpg"
 			foundImage = True
 
