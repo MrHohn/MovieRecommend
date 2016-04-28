@@ -154,7 +154,7 @@ def processMovieLensLinks(mongo):
 
 			count += 1
 			if count % progressInterval == 0:
-				print(str(count), "movie's keywords filtered so far. ("+str(int((count/movieCount)*100))+"%%) (%0.2fs)" % (time.time()-startTime))
+				print(str(count), "movie's keywords filtered so far. ("+str(int((startPercent+(count/movieCount))*100))+"%%) (%0.2fs)" % (time.time()-startTime))
 		
 		offset += interval
 		bulkPayload.execute()
