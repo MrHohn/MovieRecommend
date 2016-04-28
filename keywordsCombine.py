@@ -291,6 +291,23 @@ def reconstruct_tags(client):
 
     print("[keywordsCombine] Complete (%0.2fs)" % (time.time() - startTime))
 
+def copy_movies(client):
+    print("[keywordsCombine] Starting copy out all valid movies...")
+    startTime = time.time()
+
+    db_movieRecommend = client["movieRecommend"]
+    db_integration = client["integration"]
+    cursor = db_movieRecommend["movie"].find({})
+    for cur_movie in cursor:
+        if "title_full" not in cur_movie:
+            continue
+        cur_doc = {}
+        cur_doc["imdbtitle"] = cur_movie["title_full"]
+        cur_doc["title"] = cur_movie["title_imdb"]
+        db_integration["copy_movies"].insert(cur_doc)
+
+    print("[keywordsCombine] Complete (%0.2fs)" % (time.time() - startTime))
+
 
 def main():
     mongo = Mongo()
@@ -321,6 +338,11 @@ def main():
     print("[keywordsCombine] Created index for tag in normalized_tags")
 
     count_movies_with_tags(mongo.client) # 3 seconds
+
+    copy_movies(mongo.client) # 15 seconds
+    db_integration = mongo.client["integration"]
+    db_integration["copy_movies"].create_index([("imdbtitle", pymongo.ASCENDING)])
+    print("[keywordsCombine] Created index for imdbtitle in copy_movies")
 
 if __name__ == "__main__":
     main()

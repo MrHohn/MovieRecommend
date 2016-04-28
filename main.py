@@ -9,6 +9,7 @@ import imdbUtil
 from PIL import Image, ImageTk
 from functools import partial
 from tkinter import filedialog
+from movieRecommend import MovieRecommend
 
 BGCOLOR = 'white'
 TWICOLOR = '#4099FF'
@@ -44,36 +45,39 @@ class MovieApp:
 		self.username_screen()
 
 	def process_twitter_recommendation(self, usernameWidget):
-		#[TODO] Test list
 		username = usernameWidget.get()
 		print(username)
-		recommendations = list()
-		recommendations.append("Toy Story (1995)")
-		recommendations.append("Harry Potter and the Sorcerer's Stone (2001)")
-		recommendations.append("My Neighbor Totoro (1988)")
-		recommendations.append("The Matrix (1999)")
-		recommendations.append("Star Wars (1977)")
+
+		recommendations = []
+		recommender = MovieRecommend(self.mongo)
+		all_recommendations = recommender.recommend_movies_for_twitter_integrated(username)
+		total = min(5, len(all_recommendations))
+		for i in range(total):
+			recommendations.append(all_recommendations[i])
 		self.recommendations_screen(recommendations)
 
 	def process_movie_history_recommendation(self):
-		#[TODO] Test list
-		recommendations = list()
-		recommendations.append("Toy Story (1995)")
-		recommendations.append("Harry Potter and the Sorcerer's Stone (2001)")
-		recommendations.append("My Neighbor Totoro (1988)")
-		recommendations.append("The Matrix (1999)")
-		recommendations.append("Star Wars (1977)")
-		self.recommendations_screen(recommendations)	
+		print(self.historyList[MOVIE_MODE])
+
+		recommendations = []
+		recommender = MovieRecommend(self.mongo)
+		all_recommendations = recommender.recommend_movies_based_on_history(self.historyList[MOVIE_MODE])
+		all_recommendations = recommender.get_titles_by_mids(all_recommendations)
+		total = min(5, len(all_recommendations))
+		for i in range(total):
+			recommendations.append(all_recommendations[i])
+		self.recommendations_screen(recommendations)
 
 	def process_tag_recommendation(self):
-		#[TODO] Test list
-		recommendations = list()
-		recommendations.append("Toy Story (1995)")
-		recommendations.append("Harry Potter and the Sorcerer's Stone (2001)")
-		recommendations.append("My Neighbor Totoro (1988)")
-		recommendations.append("The Matrix (1999)")
-		recommendations.append("Star Wars (1977)")
-		self.recommendations_screen(recommendations)	
+		print(self.historyList[TAG_MODE])
+
+		recommendations = []
+		recommender = MovieRecommend(self.mongo)
+		all_recommendations = recommender.recommend_movies_based_on_tags_integrated(self.historyList[TAG_MODE])
+		total = min(5, len(all_recommendations))
+		for i in range(total):
+			recommendations.append(all_recommendations[i])
+		self.recommendations_screen(recommendations)
 
 
 	#
@@ -417,13 +421,21 @@ class MovieApp:
 				secFieldName = ""
 				matchValue = self.searchBar.get()
 				if self.searchMode == MOVIE_MODE:
-					collectionName = "movies"
+					# collectionName = "movies"
+					# primFieldName = "imdbtitle"
+					# secFieldName = "title"
+					self.mongo.db = self.mongo.client["integration"]
+					collectionName = "copy_movies"
 					primFieldName = "imdbtitle"
 					secFieldName = "title"
 				elif self.searchMode == TAG_MODE:
-					collectionName = "keywords"
-					primFieldName = "keyword"
-					secFieldName = "keyword"
+					# collectionName = "keywords"
+					# primFieldName = "keyword"
+					# secFieldName = "keyword"
+					self.mongo.db = self.mongo.client["integration"]
+					collectionName = "normalized_tags"
+					primFieldName = "tag"
+					secFieldName = "tag"
 					matchValue = matchValue.replace("-", "[-\s]").replace(" ", "[-\s]")
 
 				results = self.mongo.db[collectionName].find({
@@ -455,11 +467,13 @@ class MovieApp:
 			# New cover art we haven't encountered before. Try to download it, if it exists.
 			response = self.omdbResponse(title)
 			result = json.loads(response.text)
-			if "Poster" in result and "http" in "Poster":
+			print
+			if "Poster" in result and "http" in result["Poster"]:
 				coverart = urllib.request.urlretrieve(result["Poster"], localpath)
 				foundImage = True
 
 		if not foundImage:
+			print("[UI] Poster not found.")
 			localpath = "img/blank.jpg"
 			foundImage = True
 
