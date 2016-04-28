@@ -15,6 +15,7 @@ import imdbPeople
 collectionName = "movies"
 mongo = DataService.Mongo("imdb")
 mongo.db[collectionName].create_index("imdbtitle", unique=True)
+mongo.db["keywords"].create_index("keyword", unique=True)
 
 runType = "keywordsintegrate" #Leave this as an empty string to run all the below operations. Set to appropriate string to run just one of the below operations.
 
