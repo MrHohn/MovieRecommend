@@ -608,46 +608,36 @@ class MovieRecommend(object):
             print("[MovieRecommend] Not enough rating history: " + str(len(target_like)) + ".")
             return []
         print("[MovieRecommend] Sufficient history: " + str(len(target_like))+ ", now start calculating...")
+
+        progressInterval = 10000  # How often should we print a progress report to the console?
+        progressTotal = 247753    # Approximate number of total users
+        count = 0                 # Counter for progress
+
+        # Scan through all users in database and calculate similarity
         startTime = time.time()
-
-        thread_num = 2
-        start_pool = []
-        end_pool = []
-        step = int(247753 / thread_num)
-        for i in range(thread_num):
-            start_pool.append(i * step)
-            end_pool.append((i + 1) * step - 1)
-
-        # for i in range(len(start_pool)):
-        #     print("start: " + str(start_pool[i]) + ", end: " + str(end_pool[i]))
-        # return []
-
-        # allocate mids to all threads
-        print("[MovieRecommend] Allocating tasks to all threads...")
-        thread_poll = []
-        res_list = []
-        res_lock = threading.Lock()
-        for i in range(thread_num):
-            thread_poll.append(get_similar_thread(i, target_like, res_list, res_lock, start_pool[i], end_pool[i], thread_num, self.mongo))
-
-        print("[MovieRecommend] Starting all threads...")
-        for thread in thread_poll:
-            thread.start()
-
-        # Wait for all threads to complete
-        for thread in thread_poll:
-            thread.join()
-
-        # now compete the winners from all threads
+        # maintain a min heap for top k candidates
         candidates = queue.PriorityQueue()
-        for cur_dict in res_list:
-            cur_ids = cur_dict["ids"]
-            cur_scores = cur_dict["scores"]
-            for i in range(len(cur_ids)):
-                candidates.put(Candidate(cur_ids[i], cur_scores[i]))
-                # maintain the pool size
-                if candidates.qsize() > 20:
-                    candidates.get()
+        cursor = self.db["user_rate"].find({})
+        for cur_user in cursor:
+            count += 1
+            if count % progressInterval == 0:
+                print("[MovieRecommend] %6d users processed so far. (%d%%) (%0.2fs)" % ((count, int(count * 100 / progressTotal), time.time() - startTime)))
+
+            cur_id = cur_user["uid"]
+            if cur_id == target_id:
+                continue
+
+            cur_like = set()
+            for rating in cur_user["ratings"]:
+                if rating[1] >= 3.5:
+                    cur_like.add(rating[0])
+            if len(cur_like) < 5:
+                continue
+            cur_similarity = self.cosine_similarity(cur_like, target_like)
+            candidates.put(Candidate(cur_id, cur_similarity))
+            # maintain the pool size
+            if candidates.qsize() > 20:
+                candidates.get()
 
         # now print out and return top 20 candidates
         most_similar_users = []
@@ -671,67 +661,6 @@ class MovieRecommend(object):
             if element in set2:
                 count += 1
         return count
-
-class get_similar_thread(threading.Thread):
-    def __init__(self, threadID, target_like, res_list, res_lock, start, end, thread_num, mongo):
-        threading.Thread.__init__(self)
-        self.threadID = threadID
-        self.target_like = target_like
-        self.res_list = res_list
-        self.res_lock = res_lock
-        self.start_pos = start
-        self.end_pos = end
-        self.thread_num = thread_num
-        self.mongo = mongo
-        self.db = mongo.client["movieRecommend"]
-
-    def run(self):
-        print("[MovieRecommend] Start calculating similar users... [" + str(self.threadID) + "]")
-
-        progressInterval = 10000
-        progressTotal = 247753
-        count = 0
-        # Scan through all users in database and calculate similarity
-        startTime = time.time()
-        # maintain a min heap for top k candidates
-        candidates = queue.PriorityQueue()
-        cursor = self.db["user_rate"].find({})
-        for cur_user in cursor:
-            count += 1
-            if count < self.start_pos:
-                continue
-            if count > self.end_pos:
-                break
-            if count % progressInterval == 0:
-                print("[MovieRecommend] %6d users processed so far. (%d%%) (%0.2fs)" % ((count, int(count * 100 / progressTotal), time.time() - startTime)))
-
-            cur_id = cur_user["uid"]
-            cur_like = set()
-            for rating in cur_user["ratings"]:
-                if rating[1] >= 3.5:
-                    cur_like.add(rating[0])
-            if len(cur_like) < 5:
-                continue
-            cur_similarity = MovieRecommend.cosine_similarity(cur_like, self.target_like)
-            candidates.put(Candidate(cur_id, cur_similarity))
-            # maintain the pool size
-            if candidates.qsize() > 20:
-                candidates.get()
-
-        # now print out and return top 20 candidates
-        most_similar_users_ids = []
-        most_similar_users_scores = []
-        while not candidates.empty():
-            cur_user = candidates.get()
-            most_similar_users_ids.append(cur_user.cid)
-            most_similar_users_scores.append(cur_user.score)
-        print("[MovieRecommend] Calculation complete (%0.2fs)" % (time.time() - startTime))
-        cur_dict = {}
-        cur_dict["ids"] = most_similar_users_ids
-        cur_dict["scores"] = most_similar_users_scores
-        self.res_lock.acquire()
-        self.res_list.append(cur_dict)
-        self.res_lock.release()
 
 class Candidate(object):
     def __init__(self, cid, score):
