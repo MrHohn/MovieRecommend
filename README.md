@@ -1,5 +1,8 @@
 # MovieRecommend
 A movie recommender system based on Information Retrieval and Data Integration Theory.
+
+**Project Paper**: [https://www.overleaf.com/read/hbzdkxfpjhkx](https://www.overleaf.com/read/hbzdkxfpjhkx)
+
 ### Data sources
 - [MovieLens Latest Datasets](http://grouplens.org/datasets/movielens/latest/)
 - [MovieLens Tag Genome Dataset](http://grouplens.org/datasets/movielens/tag-genome/)
