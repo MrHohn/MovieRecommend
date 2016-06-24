@@ -1,7 +1,12 @@
 # MovieRecommend
-A movie recommender system based on Information Retrieval and Data Integration Theory.
-
 **Project Paper**: [https://www.overleaf.com/read/hbzdkxfpjhkx](https://www.overleaf.com/read/hbzdkxfpjhkx)
+
+A movie recommender system based on Information Retrieval and Data Integration Theory. Uses content-based matching to link a user's Twitter profile contents to movie information stored in a local MongoDB instance. These results are scored using a TF-IDF style weighting system, and displayed within a GUI designed using Python's tkinter library.
+
+Three modes of recommendation:
+- **Twitter**: Recommendations based on a user's Twitter profile contents.
+- **History**: Recommendations based on a list of movies specified by the user (such as a watch history)
+- **Tags**: Recommendations based on a list of tags specified by the user (genres, topics, etc)
 
 ### Data sources
 - [MovieLens Latest Datasets](http://grouplens.org/datasets/movielens/latest/)
